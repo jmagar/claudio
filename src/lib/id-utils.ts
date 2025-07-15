@@ -1,8 +1,21 @@
-// Simple ID generator to ensure uniqueness
+// Robust ID generator to ensure uniqueness
 let counter = 0;
+let lastTimestamp = 0;
 
 export function generateId(): string {
-  return `${Date.now()}-${++counter}`;
+  const timestamp = Date.now();
+  
+  // If we get the same timestamp, increment counter
+  if (timestamp === lastTimestamp) {
+    counter++;
+  } else {
+    counter = 0;
+    lastTimestamp = timestamp;
+  }
+  
+  // Add random component for extra uniqueness
+  const random = Math.random().toString(36).substr(2, 4);
+  return `${timestamp}-${counter}-${random}`;
 }
 
 export function generateConversationId(): string {

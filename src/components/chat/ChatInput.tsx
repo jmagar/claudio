@@ -69,7 +69,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
             <div className="flex flex-wrap gap-2">
               {suggestions.map((suggestion, index) => (
                 <PromptSuggestion
-                  key={index}
+                  key={`${suggestion}-${index}`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="text-xs"
                   size="sm"

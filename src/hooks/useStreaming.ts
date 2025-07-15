@@ -28,6 +28,18 @@ export function useStreaming() {
     };
   }, []);
 
+  const cleanupStreaming = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setStreamingState({
+      loading: false,
+      error: null,
+      isTyping: false,
+    });
+  }, []);
+
   const startStreaming = useCallback(async (
     prompt: string,
     mcpServers: Record<string, unknown>,
@@ -47,7 +59,16 @@ export function useStreaming() {
       streaming: true,
     };
     
-    onUpdateMessages(prev => [...prev, assistantMessage]);
+    // Ensure we don't add duplicate messages
+    onUpdateMessages(prev => {
+      // Check if there's already a streaming message from this session
+      const hasStreamingMessage = prev.some(msg => msg.streaming === true);
+      if (hasStreamingMessage) {
+        // Replace the existing streaming message instead of adding a new one
+        return prev.map(msg => msg.streaming === true ? assistantMessage : msg);
+      }
+      return [...prev, assistantMessage];
+    });
     
     // Track accumulated messages for proper formatting
     const accumulatedMessages: ClaudeMessage[] = [];
@@ -179,5 +200,6 @@ export function useStreaming() {
     ...streamingState,
     startStreaming,
     stopStreaming,
+    cleanupStreaming,
   };
 }
