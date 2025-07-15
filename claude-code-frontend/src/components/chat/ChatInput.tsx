@@ -86,7 +86,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           {/* Footer */}
           <div className="flex items-center justify-between mt-3">
             <span className={`text-xs ${
-              isDarkMode ? 'text-gray-500' : 'text-gray-500'
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
             }`}>
               Shift+Enter for new line
             </span>
@@ -102,7 +102,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               )}
               
               <span className={`text-xs ${
-                isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 {messages.length} message{messages.length !== 1 ? 's' : ''}
               </span>

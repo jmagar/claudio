@@ -11,6 +11,8 @@ import {
   Moon
 } from 'lucide-react';
 import { conversationStore, type Conversation, type ConversationMessage } from '@/lib/conversation-store';
+import { formatMessages } from '@/lib/message-utils';
+import { themeClasses } from '@/lib/theme-utils';
 import { ConversationSidebar } from '@/components/chat/ConversationSidebar';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { ChatInput } from '@/components/chat/ChatInput';
@@ -74,36 +76,6 @@ export function ClaudeMaxInterface() {
     }
   }, [messages, currentConversation]);
 
-  // Local function to format Claude messages without duplicates
-  const formatMessages = (messages: any[]): string => {
-    const uniqueContent: string[] = [];
-    
-    for (const message of messages) {
-      if (message.type === 'assistant' && message.message) {
-        const content = message.message.content;
-        let textContent = '';
-        
-        if (typeof content === 'string') {
-          textContent = content;
-        } else if (Array.isArray(content)) {
-          textContent = content
-            .map(block => block.type === 'text' ? block.text : JSON.stringify(block, null, 2))
-            .join('\n');
-        }
-        
-        if (textContent.trim() && !uniqueContent.some(existing => existing.includes(textContent.trim()))) {
-          uniqueContent.push(textContent);
-        }
-      } else if (message.type === 'result' && message.subtype === 'success') {
-        const resultContent = message.result || '';
-        if (resultContent.trim() && !uniqueContent.some(existing => existing.includes(resultContent.trim()))) {
-          uniqueContent.push(resultContent);
-        }
-      }
-    }
-    
-    return uniqueContent.join('\n\n');
-  };
 
   const startNewConversation = () => {
     if (loading) stopGeneration();
@@ -349,11 +321,7 @@ export function ClaudeMaxInterface() {
   };
 
   return (
-    <div className={`h-screen flex transition-all duration-300 ${
-      isDarkMode 
-        ? 'bg-gradient-to-br from-gray-950 via-gray-900 to-black' 
-        : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
-    }`}>
+    <div className={`h-screen flex transition-all duration-300 ${themeClasses.background(isDarkMode)}`}>
       
       {/* Use the extracted ConversationSidebar component */}
       <ConversationSidebar
@@ -369,11 +337,7 @@ export function ClaudeMaxInterface() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className={`border-b backdrop-blur-xl ${
-          isDarkMode 
-            ? 'bg-gray-950/90 border-gray-800/50 shadow-lg' 
-            : 'bg-white/90 border-gray-200/50 shadow-sm'
-        }`}>
+        <div className={`border-b backdrop-blur-xl ${themeClasses.headerBackground(isDarkMode)}`}>
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <Button
@@ -385,18 +349,14 @@ export function ClaudeMaxInterface() {
                 <Menu className="h-4 w-4" />
               </Button>
               
-              <div className={`flex items-center gap-2 ${
-                isDarkMode ? 'text-white' : 'text-slate-900'
-              }`}>
+              <div className={`flex items-center gap-2 ${themeClasses.textPrimary(isDarkMode)}`}>
                 <div className="relative">
                   <Bot className="h-6 w-6" />
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse" />
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold">Claude Code</h1>
-                  <p className={`text-xs ${
-                    isDarkMode ? 'text-slate-400' : 'text-slate-600'
-                  }`}>
+                  <p className={`text-xs ${themeClasses.textSecondary(isDarkMode)}`}>
                     {currentConversation?.title || 'New Conversation'}
                   </p>
                 </div>

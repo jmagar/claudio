@@ -44,13 +44,13 @@ export function ChatMessages({
   onRestartFromMessage,
   onSetEditingMessageId
 }: ChatMessagesProps) {
-  // Show welcome screen when no messages
-  if (messages.length === 0 && !loading && !error) {
-    return <WelcomeScreen isDarkMode={isDarkMode} />;
-  }
-
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto">
+      {/* Show welcome screen when no messages */}
+      {messages.length === 0 && !loading && !error ? (
+        <WelcomeScreen isDarkMode={isDarkMode} />
+      ) : (
+        <div className="p-6 space-y-6">
       <AnimatePresence>
         {messages.map((message, index) => (
           <motion.div
@@ -285,6 +285,8 @@ export function ChatMessages({
             </div>
           </div>
         </motion.div>
+      )}
+        </div>
       )}
     </div>
   );

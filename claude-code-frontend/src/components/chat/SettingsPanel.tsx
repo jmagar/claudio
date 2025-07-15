@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { validateMcpCommand, validateMcpUrl, sanitizeMcpCommand } from '@/lib/message-utils';
+import { themeClasses } from '@/lib/theme-utils';
 import { 
   X, 
   Sun, 
@@ -443,13 +445,17 @@ export function SettingsPanel({
                                   <input
                                     type="url"
                                     value={server.url || ''}
-                                    onChange={(e) => onUpdateMcpServer(index, { url: e.target.value })}
+                                    onChange={(e) => {
+                                      const url = e.target.value;
+                                      onUpdateMcpServer(index, { url });
+                                    }}
                                     className={`w-full px-3 py-2 text-sm rounded-xl border transition-all ${
                                       isDarkMode 
                                         ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500' 
                                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
                                     } focus:ring-2 focus:ring-blue-500/20`}
                                     placeholder="https://localhost:3000"
+                                    title="Enter a valid HTTP/HTTPS URL"
                                   />
                                 </div>
                               )}
@@ -464,38 +470,51 @@ export function SettingsPanel({
                               <input
                                 type="text"
                                 value={server.command}
-                                onChange={(e) => onUpdateMcpServer(index, { command: e.target.value })}
+                                onChange={(e) => {
+                                  const sanitized = sanitizeMcpCommand(e.target.value);
+                                  onUpdateMcpServer(index, { command: sanitized });
+                                }}
                                 className={`w-full px-3 py-2 text-sm rounded-xl border transition-all font-mono ${
                                   isDarkMode 
                                     ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-blue-500' 
                                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-blue-500'
                                 } focus:ring-2 focus:ring-blue-500/20`}
                                 placeholder="npx @modelcontextprotocol/server-filesystem /path/to/allowed"
+                                title="Only safe commands allowed. Dangerous characters will be removed."
                               />
                             </div>
 
                             {/* Validation Status */}
-                            <div className={`flex items-center gap-2 p-2 rounded-xl ${
-                              server.command && server.name
-                                ? isDarkMode 
-                                  ? 'bg-green-900/20 text-green-400' 
-                                  : 'bg-green-50 text-green-700'
-                                : isDarkMode 
-                                  ? 'bg-amber-900/20 text-amber-400' 
-                                  : 'bg-amber-50 text-amber-700'
-                            }`}>
-                              {server.command && server.name ? (
-                                <>
-                                  <Check className="h-3 w-3" />
-                                  <span className="text-xs">Configuration complete</span>
-                                </>
-                              ) : (
-                                <>
+                            {(() => {
+                              if (!server.name || !server.command) {
+                                return (
+                                  <div className={`flex items-center gap-2 p-2 rounded-xl ${themeClasses.warningBackground(isDarkMode)}`}>
+                                    <AlertCircle className="h-3 w-3" />
+                                    <span className="text-xs">Name and command required</span>
+                                  </div>
+                                );
+                              }
+
+                              const commandValidation = validateMcpCommand(server.command);
+                              const urlValidation = server.type === 'http' && server.url ? validateMcpUrl(server.url) : { isValid: true };
+
+                              if (commandValidation.isValid && urlValidation.isValid) {
+                                return (
+                                  <div className={`flex items-center gap-2 p-2 rounded-xl ${themeClasses.successBackground(isDarkMode)}`}>
+                                    <Check className="h-3 w-3" />
+                                    <span className="text-xs">Configuration complete</span>
+                                  </div>
+                                );
+                              }
+
+                              const error = commandValidation.error || urlValidation.error;
+                              return (
+                                <div className={`flex items-center gap-2 p-2 rounded-xl ${themeClasses.errorBackground(isDarkMode)}`}>
                                   <AlertCircle className="h-3 w-3" />
-                                  <span className="text-xs">Name and command required</span>
-                                </>
-                              )}
-                            </div>
+                                  <span className="text-xs">{error}</span>
+                                </div>
+                              );
+                            })()}
                           </motion.div>
                         )}
                       </AnimatePresence>

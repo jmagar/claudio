@@ -48,7 +48,7 @@ export function WelcomeScreen({ isDarkMode }: WelcomeScreenProps) {
   ];
 
   return (
-    <div className="h-full flex items-center justify-center p-8">
+    <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
       <div className="max-w-4xl w-full">
         {/* Hero Section */}
         <motion.div
@@ -139,7 +139,7 @@ export function WelcomeScreen({ isDarkMode }: WelcomeScreenProps) {
                     {suggestion.description}
                   </p>
                   <div className={`flex items-center gap-2 text-xs font-medium ${
-                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
                   }`}>
                     <MessageSquare className="h-3 w-3" />
                     <span>"{suggestion.example}"</span>
