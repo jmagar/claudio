@@ -6,7 +6,7 @@ import {
   PromptInput, 
   PromptInputTextarea, 
   PromptInputActions, 
-  PromptInputAction 
+  PromptInputAction, 
 } from '@/components/ui/prompt-input';
 import { PromptSuggestion } from '@/components/ui/prompt-suggestion';
 import { Send, X } from 'lucide-react';
@@ -23,7 +23,7 @@ interface McpServer {
 interface ChatInputProps {
   prompt: string;
   loading: boolean;
-  messages: any[];
+  messages: unknown[];
   mcpServers: McpServer[];
   isDarkMode: boolean;
   onPromptChange: (value: string) => void;
@@ -42,15 +42,15 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     onPromptChange,
     onSubmit,
     onStopGeneration,
-    onKeyPress
-  }, ref) => {
+    onKeyPress,
+  }, _ref) => {
     const suggestions = [
-      "Help me debug this code",
-      "Explain how this works",
-      "Write unit tests for this function",
-      "Refactor this code to be more efficient",
-      "Add error handling",
-      "Generate documentation"
+      'Help me debug this code',
+      'Explain how this works',
+      'Write unit tests for this function',
+      'Refactor this code to be more efficient',
+      'Add error handling',
+      'Generate documentation',
     ];
 
     const handleSuggestionClick = (suggestion: string) => {
@@ -160,7 +160,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
 ChatInput.displayName = 'ChatInput';

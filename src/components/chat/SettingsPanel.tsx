@@ -22,7 +22,7 @@ import {
   ChevronRight,
   Zap,
   Globe,
-  Terminal
+  Terminal,
 } from 'lucide-react';
 
 interface McpServer {
@@ -53,12 +53,12 @@ export function SettingsPanel({
   onToggleDarkMode,
   onAddMcpServer,
   onUpdateMcpServer,
-  onRemoveMcpServer
+  onRemoveMcpServer,
 }: SettingsPanelProps) {
   const [expandedServer, setExpandedServer] = useState<number | null>(null);
   const [showMcpInfo, setShowMcpInfo] = useState(false);
 
-  if (!isVisible) return null;
+  if (!isVisible) {return null;}
 
   const getConnectionTypeIcon = (type: string) => {
     switch (type) {
@@ -69,21 +69,13 @@ export function SettingsPanel({
     }
   };
 
-  const getConnectionTypeColor = (type: string) => {
-    switch (type) {
-      case 'stdio': return 'text-blue-500';
-      case 'sse': return 'text-yellow-500';
-      case 'http': return 'text-green-500';
-      default: return 'text-blue-500';
-    }
-  };
 
   return (
     <motion.div
       initial={{ x: 400, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 400, opacity: 0 }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
       className={`w-96 border-l backdrop-blur-xl ${
         isDarkMode 
           ? 'bg-gray-950/95 border-gray-800/50 shadow-2xl' 
@@ -422,7 +414,7 @@ export function SettingsPanel({
                                 </label>
                                 <select
                                   value={server.type || 'stdio'}
-                                  onChange={(e) => onUpdateMcpServer(index, { type: e.target.value as any })}
+                                  onChange={(e) => onUpdateMcpServer(index, { type: e.target.value as 'stdio' | 'sse' | 'http' })}
                                   className={`w-full px-3 py-2 text-sm rounded-xl border transition-all ${
                                     isDarkMode 
                                       ? 'bg-gray-800 border-gray-700 text-white focus:border-blue-500' 

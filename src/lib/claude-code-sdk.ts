@@ -1,4 +1,4 @@
-import { query, type SDKMessage } from "@anthropic-ai/claude-code";
+import { query, type SDKMessage, type McpServerConfig } from '@anthropic-ai/claude-code';
 
 export interface ClaudeCodeOptions {
   prompt: string;
@@ -6,7 +6,7 @@ export interface ClaudeCodeOptions {
   customSystemPrompt?: string;
   allowedTools?: string[];
   disallowedTools?: string[];
-  mcpServers?: Record<string, any>;
+  mcpServers?: Record<string, McpServerConfig>;
 }
 
 export async function* runClaudeCodeQuery({
@@ -15,7 +15,7 @@ export async function* runClaudeCodeQuery({
   customSystemPrompt,
   allowedTools,
   disallowedTools,
-  mcpServers
+  mcpServers,
 }: ClaudeCodeOptions) {
   try {
     const abortController = new AbortController();
@@ -28,13 +28,13 @@ export async function* runClaudeCodeQuery({
         customSystemPrompt,
         allowedTools,
         disallowedTools,
-        mcpServers
-      }
+        mcpServers,
+      },
     })) {
       yield message;
     }
   } catch (error) {
-    console.error("Claude Code SDK error:", error);
+    console.error('Claude Code SDK error:', error);
     throw error;
   }
 }
@@ -47,7 +47,7 @@ export async function getClaudeCodeResponse(options: ClaudeCodeOptions): Promise
       messages.push(message);
     }
   } catch (error) {
-    console.error("Failed to get Claude Code response:", error);
+    console.error('Failed to get Claude Code response:', error);
     throw error;
   }
   

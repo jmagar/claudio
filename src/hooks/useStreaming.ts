@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { formatMessages } from '@/lib/message-utils';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { formatMessages, type ClaudeMessage } from '@/lib/message-utils';
 import { type ConversationMessage } from '@/lib/conversation-store';
 import { generateMessageId } from '@/lib/id-utils';
 
@@ -13,31 +13,48 @@ export function useStreaming() {
   const [streamingState, setStreamingState] = useState<StreamingState>({
     loading: false,
     error: null,
-    isTyping: false
+    isTyping: false,
   });
   
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Cleanup AbortController on component unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
+
   const startStreaming = useCallback(async (
     prompt: string,
-    mcpServers: Record<string, any>,
-    onUpdateMessages: (updater: (prev: ConversationMessage[]) => ConversationMessage[]) => void
+    mcpServers: Record<string, unknown>,
+    onUpdateMessages: (updater: (prev: ConversationMessage[]) => ConversationMessage[]) => void,
   ) => {
+    // Abort any existing streaming operation
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     // Create streaming assistant message
     const assistantMessage: ConversationMessage = {
       id: generateMessageId(),
       type: 'assistant',
       content: '',
       timestamp: new Date(),
-      streaming: true
+      streaming: true,
     };
     
     onUpdateMessages(prev => [...prev, assistantMessage]);
     
     // Track accumulated messages for proper formatting
-    const accumulatedMessages: any[] = [];
+    const accumulatedMessages: ClaudeMessage[] = [];
     
     setStreamingState(prev => ({ ...prev, loading: true, error: null }));
+    
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
     
     try {
       abortControllerRef.current = new AbortController();
@@ -47,83 +64,108 @@ export function useStreaming() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           prompt,
-          mcpServers
+          mcpServers,
         }),
-        signal: abortControllerRef.current.signal
+        signal: abortControllerRef.current.signal,
       });
 
-      if (!response.body) throw new Error('No response body');
+      if (!response.body) {throw new Error('No response body');}
 
-      const reader = response.body.getReader();
+      reader = response.body.getReader();
       const decoder = new TextDecoder();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {break;}
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              setStreamingState(prev => ({ ...prev, loading: false }));
-              return;
-            }
-
-            try {
-              const message = JSON.parse(data);
-              
-              if (message.type === 'error') {
-                setStreamingState(prev => ({ ...prev, error: message.error, loading: false }));
-                break;
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                setStreamingState(prev => ({ ...prev, loading: false }));
+                return;
               }
 
-              // Add to accumulated messages and format with deduplication
-              accumulatedMessages.push(message);
-              
-              // Use the local formatMessages function for consistent formatting without duplicates
-              const formattedContent = formatMessages(accumulatedMessages);
-              
-              // Extract token usage from result messages
-              let tokenUsage = undefined;
-              if (message.type === 'result' && message.usage) {
-                tokenUsage = {
-                  input: message.usage.input_tokens || 0,
-                  output: message.usage.output_tokens || 0,
-                  total: message.usage.total_tokens || (message.usage.input_tokens || 0) + (message.usage.output_tokens || 0)
-                };
+              try {
+                const message = JSON.parse(data) as unknown;
+                
+                if (message && typeof message === 'object' && 'type' in message && message.type === 'error') {
+                  const errorMessage = message as { error?: string };
+                  setStreamingState(prev => ({ ...prev, error: errorMessage.error || 'Unknown error', loading: false }));
+                  break;
+                }
+
+                // Add to accumulated messages and format with deduplication
+                accumulatedMessages.push(message as ClaudeMessage);
+                
+                // Use the local formatMessages function for consistent formatting without duplicates
+                const formattedContent = formatMessages(accumulatedMessages);
+                
+                // Extract token usage from result messages
+                let tokenUsage = undefined;
+                if (message && typeof message === 'object' && 'type' in message && message.type === 'result' && 'usage' in message && message.usage) {
+                  const resultMessage = message as { usage: { input_tokens?: number; output_tokens?: number; total_tokens?: number } };
+                  tokenUsage = {
+                    input: resultMessage.usage.input_tokens || 0,
+                    output: resultMessage.usage.output_tokens || 0,
+                    total: resultMessage.usage.total_tokens || (resultMessage.usage.input_tokens || 0) + (resultMessage.usage.output_tokens || 0),
+                  };
+                }
+                
+                if (formattedContent.trim()) {
+                  onUpdateMessages(prev => prev.map(msg => 
+                    msg.id === assistantMessage.id 
+                      ? { 
+                          ...msg, 
+                          content: formattedContent,
+                          streaming: false, // Mark as no longer streaming
+                          ...(tokenUsage && { tokens: tokenUsage }),
+                        }
+                      : msg,
+                  ));
+                }
+              } catch (_e) {
+                console.error('Error parsing message:', _e);
               }
-              
-              if (formattedContent.trim()) {
-                onUpdateMessages(prev => prev.map(msg => 
-                  msg.id === assistantMessage.id 
-                    ? { 
-                        ...msg, 
-                        content: formattedContent,
-                        ...(tokenUsage && { tokens: tokenUsage })
-                      }
-                    : msg
-                ));
-              }
-            } catch (e) {
-              console.error('Error parsing message:', e);
             }
           }
         }
+      } finally {
+        // Always close the reader to prevent resource leaks
+        if (reader) {
+          try {
+            reader.releaseLock();
+          } catch {
+            // Reader might already be closed
+          }
+        }
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         setStreamingState(prev => ({ ...prev, error: 'Request was cancelled', loading: false }));
       } else {
         setStreamingState(prev => ({ ...prev, error: 'Failed to connect to Claude Code SDK', loading: false }));
       }
-      // Remove the streaming message on error
-      onUpdateMessages(prev => prev.filter(msg => msg.id !== assistantMessage.id));
+      // Don't remove the streaming message on error - preserve partial content
+      onUpdateMessages(prev => prev.map(msg => 
+        msg.id === assistantMessage.id 
+          ? { ...msg, streaming: false }
+          : msg,
+      ));
     } finally {
       setStreamingState(prev => ({ ...prev, loading: false }));
-      abortControllerRef.current = null;
+      
+      // Clear accumulated messages to prevent memory leaks
+      accumulatedMessages.length = 0;
+      
+      // Clean up AbortController reference
+      if (abortControllerRef.current) {
+        abortControllerRef.current = null;
+      }
     }
   }, []);
 
@@ -136,6 +178,6 @@ export function useStreaming() {
   return {
     ...streamingState,
     startStreaming,
-    stopStreaming
+    stopStreaming,
   };
 }

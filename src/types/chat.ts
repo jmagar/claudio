@@ -19,7 +19,7 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
   totalTokens: number;
-  mcpServers?: Record<string, any>;
+  mcpServers?: Record<string, unknown>;
 }
 
 export interface McpServer {

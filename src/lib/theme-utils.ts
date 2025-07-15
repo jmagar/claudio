@@ -114,12 +114,12 @@ export function getFocusRing(isDarkMode: boolean): string {
 export function getButtonClasses(
   variant: 'primary' | 'secondary' | 'ghost' | 'danger',
   isDarkMode: boolean,
-  size: 'sm' | 'md' | 'lg' = 'md'
+  size: 'sm' | 'md' | 'lg' = 'md',
 ): string {
   const sizeClasses = {
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2',
-    lg: 'px-6 py-3 text-lg'
+    lg: 'px-6 py-3 text-lg',
   };
 
   const baseClasses = `rounded-xl transition-all hover:scale-105 ${sizeClasses[size]}`;

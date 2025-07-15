@@ -1,13 +1,13 @@
-"use client"
+'use client';
 
-import { Button, buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { VariantProps } from "class-variance-authority"
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { VariantProps } from 'class-variance-authority';
 
 export type PromptSuggestionProps = {
   children: React.ReactNode
-  variant?: VariantProps<typeof buttonVariants>["variant"]
-  size?: VariantProps<typeof buttonVariants>["size"]
+  variant?: VariantProps<typeof buttonVariants>['variant']
+  size?: VariantProps<typeof buttonVariants>['size']
   className?: string
   highlight?: string
 } & React.ButtonHTMLAttributes<HTMLButtonElement>
@@ -20,72 +20,72 @@ function PromptSuggestion({
   highlight,
   ...props
 }: PromptSuggestionProps) {
-  const isHighlightMode = highlight !== undefined && highlight.trim() !== ""
-  const content = typeof children === "string" ? children : ""
+  const isHighlightMode = highlight !== undefined && highlight.trim() !== '';
+  const content = typeof children === 'string' ? children : '';
 
   if (!isHighlightMode) {
     return (
       <Button
-        variant={variant || "outline"}
-        size={size || "lg"}
-        className={cn("rounded-full", className)}
+        variant={variant || 'outline'}
+        size={size || 'lg'}
+        className={cn('rounded-full', className)}
         {...props}
       >
         {children}
       </Button>
-    )
+    );
   }
 
   if (!content) {
     return (
       <Button
-        variant={variant || "ghost"}
-        size={size || "sm"}
+        variant={variant || 'ghost'}
+        size={size || 'sm'}
         className={cn(
-          "w-full cursor-pointer justify-start rounded-xl py-2",
-          "hover:bg-accent",
-          className
+          'w-full cursor-pointer justify-start rounded-xl py-2',
+          'hover:bg-accent',
+          className,
         )}
         {...props}
       >
         {children}
       </Button>
-    )
+    );
   }
 
-  const trimmedHighlight = highlight.trim()
-  const contentLower = content.toLowerCase()
-  const highlightLower = trimmedHighlight.toLowerCase()
-  const shouldHighlight = contentLower.includes(highlightLower)
+  const trimmedHighlight = highlight.trim();
+  const contentLower = content.toLowerCase();
+  const highlightLower = trimmedHighlight.toLowerCase();
+  const shouldHighlight = contentLower.includes(highlightLower);
 
   return (
     <Button
-      variant={variant || "ghost"}
-      size={size || "sm"}
+      variant={variant || 'ghost'}
+      size={size || 'sm'}
       className={cn(
-        "w-full cursor-pointer justify-start gap-0 rounded-xl py-2",
-        "hover:bg-accent",
-        className
+        'w-full cursor-pointer justify-start gap-0 rounded-xl py-2',
+        'hover:bg-accent',
+        className,
       )}
       {...props}
     >
       {shouldHighlight ? (
         (() => {
-          const index = contentLower.indexOf(highlightLower)
+          const index = contentLower.indexOf(highlightLower);
           if (index === -1)
-            return (
+            {return (
               <span className="text-muted-foreground whitespace-pre-wrap">
                 {content}
               </span>
-            )
+            );}
 
           const actualHighlightedText = content.substring(
             index,
-            index + highlightLower.length
-          )
+            index + highlightLower.length,
+          );
 
-          const before = content.substring(0, index)
-          const after = content.substring(index + actualHighlightedText.length)
+          const before = content.substring(0, index);
+          const after = content.substring(index + actualHighlightedText.length);
 
           return (
             <>
@@ -103,7 +103,7 @@ function PromptSuggestion({
                 </span>
               )}
             </>
-          )
+          );
         })()
       ) : (
         <span className="text-muted-foreground whitespace-pre-wrap">
@@ -111,7 +111,7 @@ function PromptSuggestion({
         </span>
       )}
     </Button>
-  )
+  );
 }
 
-export { PromptSuggestion }
+export { PromptSuggestion };

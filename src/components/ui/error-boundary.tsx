@@ -64,7 +64,7 @@ export class ErrorBoundary extends Component<Props, State> {
 // Hook-based error boundary for functional components
 export function withErrorBoundary<T extends object>(
   Component: React.ComponentType<T>,
-  errorFallback?: ReactNode
+  errorFallback?: ReactNode,
 ) {
   return function WithErrorBoundary(props: T) {
     return (

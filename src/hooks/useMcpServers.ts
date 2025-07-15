@@ -19,14 +19,14 @@ export function useMcpServers() {
       command: '',
       args: [],
       type: 'stdio',
-      enabled: false
+      enabled: false,
     };
     setMcpServers(prev => [...prev, newServer]);
   }, []);
 
   const updateMcpServer = useCallback((index: number, updates: Partial<McpServer>) => {
     setMcpServers(prev => prev.map((server, i) => 
-      i === index ? { ...server, ...updates } : server
+      i === index ? { ...server, ...updates } : server,
     ));
   }, []);
 
@@ -42,10 +42,10 @@ export function useMcpServers() {
           command: server.command,
           args: server.args,
           type: server.type || 'stdio',
-          url: server.url
+          url: server.url,
         };
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, unknown>);
   }, [mcpServers]);
 
   const getEnabledServers = useCallback(() => enabledServers, [enabledServers]);
@@ -55,6 +55,6 @@ export function useMcpServers() {
     addMcpServer,
     updateMcpServer,
     removeMcpServer,
-    getEnabledServers
+    getEnabledServers,
   };
 }

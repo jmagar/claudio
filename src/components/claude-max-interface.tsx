@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Settings, 
@@ -8,9 +8,9 @@ import {
   Bot,
   Menu,
   Sun,
-  Moon
+  Moon,
 } from 'lucide-react';
-import { type ConversationMessage } from '@/lib/conversation-store';
+import { type ConversationMessage, type Conversation } from '@/lib/conversation-store';
 import { themeClasses } from '@/lib/theme-utils';
 import { generateMessageId } from '@/lib/id-utils';
 import { ConversationSidebar } from '@/components/chat/ConversationSidebar';
@@ -39,15 +39,14 @@ export function ClaudeMaxInterface() {
     loadConversation,
     deleteConversation,
     editMessage,
-    restartFromMessage
+    restartFromMessage,
   } = useConversations();
 
   const {
     loading,
     error,
-    isTyping,
     startStreaming,
-    stopStreaming
+    stopStreaming,
   } = useStreaming();
 
   const {
@@ -55,19 +54,19 @@ export function ClaudeMaxInterface() {
     addMcpServer,
     updateMcpServer,
     removeMcpServer,
-    getEnabledServers
+    getEnabledServers,
   } = useMcpServers();
 
 
   const startNewConversation = () => {
-    if (loading) stopStreaming();
+    if (loading) {stopStreaming();}
     
-    const newConv = createNewConversation(getEnabledServers());
+    createNewConversation(getEnabledServers());
     setEditingMessageId(null);
   };
 
-  const handleLoadConversation = (conversation: any) => {
-    if (loading) stopStreaming();
+  const handleLoadConversation = (conversation: Conversation) => {
+    if (loading) {stopStreaming();}
     loadConversation(conversation);
     setEditingMessageId(null);
   };
@@ -85,7 +84,7 @@ export function ClaudeMaxInterface() {
   };
 
   const handleSubmit = async () => {
-    if (!prompt.trim() || loading) return;
+    if (!prompt.trim() || loading) {return;}
     
     // Create new conversation if none exists
     if (!currentConversation) {
@@ -96,7 +95,7 @@ export function ClaudeMaxInterface() {
       id: generateMessageId(),
       type: 'user',
       content: prompt,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
     
     setMessages(prev => [...prev, userMessage]);
@@ -118,7 +117,7 @@ export function ClaudeMaxInterface() {
   };
 
   const clearChat = () => {
-    if (loading) stopStreaming();
+    if (loading) {stopStreaming();}
     startNewConversation();
   };
 
@@ -147,7 +146,7 @@ export function ClaudeMaxInterface() {
                 size="sm"
                 onClick={() => setShowSidebar(!showSidebar)}
                 className="rounded-xl"
-                aria-label={showSidebar ? "Hide sidebar" : "Show sidebar"}
+                aria-label={showSidebar ? 'Hide sidebar' : 'Show sidebar'}
               >
                 <Menu className="h-4 w-4" />
               </Button>
@@ -172,7 +171,7 @@ export function ClaudeMaxInterface() {
                 size="sm"
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="rounded-xl"
-                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
@@ -182,7 +181,7 @@ export function ClaudeMaxInterface() {
                 size="sm"
                 onClick={() => setShowSettings(!showSettings)}
                 className="rounded-xl"
-                aria-label={showSettings ? "Hide settings" : "Show settings"}
+                aria-label={showSettings ? 'Hide settings' : 'Show settings'}
               >
                 <Settings className="h-4 w-4" />
               </Button>

@@ -8,13 +8,13 @@ export async function POST(request: NextRequest) {
       customSystemPrompt, 
       maxTurns = 3,
       allowedTools,
-      disallowedTools 
+      disallowedTools, 
     } = await request.json();
     
     if (!prompt) {
       return NextResponse.json(
         { error: 'Prompt is required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
     
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       customSystemPrompt,
       maxTurns,
       allowedTools,
-      disallowedTools
+      disallowedTools,
     });
     
     const formattedResponse = formatClaudeMessages(messages);
@@ -31,28 +31,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       response: formattedResponse,
       messages,
-      messageCount: messages.length
+      messageCount: messages.length,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Claude Code API error:', error);
     
     // Handle authentication errors specifically
-    if (error.message?.includes('authentication') || error.message?.includes('login')) {
+    if (error instanceof Error && (error.message?.includes('authentication') || error.message?.includes('login'))) {
       return NextResponse.json(
         { 
           error: 'Authentication required. Please run "claude login" in your terminal first.',
-          authRequired: true
+          authRequired: true,
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
     
     return NextResponse.json(
       { 
-        error: error.message || 'Failed to process request',
-        details: error.stack
+        error: error instanceof Error ? error.message : 'Failed to process request',
+        details: error instanceof Error ? error.stack : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

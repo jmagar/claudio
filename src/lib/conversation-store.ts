@@ -23,7 +23,7 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
   totalTokens: number;
-  mcpServers?: Record<string, any>;
+  mcpServers?: Record<string, unknown>;
 }
 
 class ConversationStore {
@@ -34,22 +34,25 @@ class ConversationStore {
   }
 
   getAllConversations(): Conversation[] {
-    if (!this.isBrowser()) return [];
+    if (!this.isBrowser()) {return [];}
     
     try {
       const stored = localStorage.getItem(this.storageKey);
-      if (!stored) return [];
+      if (!stored) {return [];}
       
       const conversations = JSON.parse(stored);
-      return conversations.map((conv: any) => ({
-        ...conv,
-        createdAt: new Date(conv.createdAt),
-        updatedAt: new Date(conv.updatedAt),
-        messages: conv.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
-      }));
+      return conversations.map((conv: unknown) => {
+        const conversation = conv as Record<string, unknown>;
+        return {
+          ...conversation,
+          createdAt: new Date(conversation.createdAt as string),
+          updatedAt: new Date(conversation.updatedAt as string),
+          messages: (conversation.messages as Array<Record<string, unknown>>).map((msg) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp as string),
+          })),
+        };
+      });
     } catch (error) {
       console.error('Error loading conversations:', error);
       return [];
@@ -62,7 +65,7 @@ class ConversationStore {
   }
 
   saveConversation(conversation: Conversation): void {
-    if (!this.isBrowser()) return;
+    if (!this.isBrowser()) {return;}
     
     try {
       const conversations = this.getAllConversations();
@@ -83,7 +86,7 @@ class ConversationStore {
   }
 
   deleteConversation(id: string): void {
-    if (!this.isBrowser()) return;
+    if (!this.isBrowser()) {return;}
     
     try {
       const conversations = this.getAllConversations();
@@ -96,7 +99,7 @@ class ConversationStore {
 
   generateTitle(messages: ConversationMessage[]): string {
     const firstUserMessage = messages.find(m => m.type === 'user');
-    if (!firstUserMessage) return 'New Conversation';
+    if (!firstUserMessage) {return 'New Conversation';}
     
     // Extract meaningful words from the first message
     const content = firstUserMessage.content.trim();
@@ -107,7 +110,7 @@ class ConversationStore {
     return title.length > 50 ? title.substring(0, 47) + '...' : title;
   }
 
-  createNewConversation(mcpServers?: Record<string, any>): Conversation {
+  createNewConversation(mcpServers?: Record<string, unknown>): Conversation {
     return {
       id: generateConversationId(),
       title: 'New Conversation',
@@ -115,7 +118,7 @@ class ConversationStore {
       createdAt: new Date(),
       updatedAt: new Date(),
       totalTokens: 0,
-      mcpServers: mcpServers || {}
+      mcpServers: mcpServers || {},
     };
   }
 }

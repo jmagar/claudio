@@ -1,33 +1,29 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Bot, 
-  User, 
-  Loader2, 
   AlertCircle, 
   Copy, 
   Edit3, 
   RotateCcw, 
-  Hash 
+  Hash, 
 } from 'lucide-react';
 import { 
   Message, 
   MessageAvatar, 
   MessageContent, 
   MessageActions, 
-  MessageAction 
+  MessageAction, 
 } from '@/components/ui/message';
 import { Loader } from '@/components/ui/loader';
 import { 
   ChatContainerRoot, 
   ChatContainerContent, 
-  ChatContainerScrollAnchor 
+  ChatContainerScrollAnchor, 
 } from '@/components/ui/chat-container';
-import { ScrollButton } from '@/components/ui/scroll-button';
+// import { ScrollButton } from '@/components/ui/scroll-button';
 import { ConversationMessage } from '@/types/chat';
 import { WelcomeScreen } from './WelcomeScreen';
 import { useEffect, useState, memo } from 'react';
@@ -59,12 +55,12 @@ function ClientOnlyScrollButton() {
     if (container) {
       container.scrollTo({
         top: container.scrollHeight,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }
   };
   
-  if (!isMounted) return null;
+  if (!isMounted) {return null;}
   
   return (
     <Button
@@ -72,8 +68,8 @@ function ClientOnlyScrollButton() {
       size="sm"
       className={`h-10 w-10 rounded-full transition-all duration-150 ease-out ${
         !isAtBottom
-          ? "translate-y-0 scale-100 opacity-100"
-          : "pointer-events-none translate-y-4 scale-95 opacity-0"
+          ? 'translate-y-0 scale-100 opacity-100'
+          : 'pointer-events-none translate-y-4 scale-95 opacity-0'
       }`}
       onClick={scrollToBottom}
     >
@@ -105,7 +101,7 @@ export const ChatMessages = memo(function ChatMessages({
   onCopyToClipboard,
   onEditMessage,
   onRestartFromMessage,
-  onSetEditingMessageId
+  onSetEditingMessageId,
 }: ChatMessagesProps) {
   return (
     <div className="flex-1 relative">
@@ -117,7 +113,7 @@ export const ChatMessages = memo(function ChatMessages({
           ) : (
             <div className="space-y-6">
       <AnimatePresence>
-        {messages.map((message, index) => (
+        {messages.map((message) => (
           <motion.div
             key={message.id}
             initial={{ opacity: 0, y: 20 }}

@@ -40,6 +40,10 @@ export default [
       "prefer-const": "error",
       "no-var": "error",
       
+      // TypeScript rules
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      
       // Style rules
       "semi": ["error", "always"],
       "quotes": ["error", "single", { "avoidEscape": true }],

@@ -12,7 +12,7 @@ import {
   Hash,
   Clock,
   FileText,
-  Trash2
+  Trash2,
 } from 'lucide-react';
 import { Conversation } from '@/types/chat';
 
@@ -33,16 +33,16 @@ export const ConversationSidebar = memo(function ConversationSidebar({
   onNewConversation,
   onDeleteConversation,
   isDarkMode,
-  isVisible
+  isVisible,
 }: ConversationSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.messages.some(msg => msg.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    conv.messages.some(msg => msg.content.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
-  if (!isVisible) return null;
+  if (!isVisible) {return null;}
 
   return (
     <AnimationErrorBoundary>
@@ -50,7 +50,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
         initial={{ x: -320, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: -320, opacity: 0 }}
-        transition={{ type: "spring", damping: 20 }}
+        transition={{ type: 'spring', damping: 20 }}
         className={`w-80 flex-shrink-0 border-r backdrop-blur-xl ${
           isDarkMode 
             ? 'bg-gray-950/95 border-gray-800/50 shadow-2xl' 

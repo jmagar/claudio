@@ -8,7 +8,7 @@ import {
   MessageSquare, 
   FileText, 
   Layers,
-  ArrowRight
+  ArrowRight,
 } from 'lucide-react';
 
 interface WelcomeScreenProps {
@@ -19,32 +19,32 @@ export function WelcomeScreen({ isDarkMode }: WelcomeScreenProps) {
   const suggestions = [
     {
       icon: Code,
-      title: "Code Generation",
-      description: "Create React components with TypeScript",
-      example: "Build a responsive navbar component",
-      color: "from-blue-500 to-cyan-500"
+      title: 'Code Generation',
+      description: 'Create React components with TypeScript',
+      example: 'Build a responsive navbar component',
+      color: 'from-blue-500 to-cyan-500',
     },
     {
       icon: Zap,
-      title: "Debug & Optimize",
-      description: "Fix bugs and improve performance",
-      example: "Debug this async function",
-      color: "from-yellow-500 to-orange-500"
+      title: 'Debug & Optimize',
+      description: 'Fix bugs and improve performance',
+      example: 'Debug this async function',
+      color: 'from-yellow-500 to-orange-500',
     },
     {
       icon: FileText,
-      title: "Documentation",
-      description: "Generate docs and comments",
-      example: "Write API documentation",
-      color: "from-green-500 to-emerald-500"
+      title: 'Documentation',
+      description: 'Generate docs and comments',
+      example: 'Write API documentation',
+      color: 'from-green-500 to-emerald-500',
     },
     {
       icon: Layers,
-      title: "Architecture",
-      description: "Design patterns and best practices",
-      example: "Suggest state management approach",
-      color: "from-purple-500 to-pink-500"
-    }
+      title: 'Architecture',
+      description: 'Design patterns and best practices',
+      example: 'Suggest state management approach',
+      color: 'from-purple-500 to-pink-500',
+    },
   ];
 
   return (
@@ -60,7 +60,7 @@ export function WelcomeScreen({ isDarkMode }: WelcomeScreenProps) {
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5, type: "spring", stiffness: 200 }}
+            transition={{ delay: 0.2, duration: 0.5, type: 'spring', stiffness: 200 }}
             className={`relative w-24 h-24 mx-auto mb-6 rounded-3xl ${
               isDarkMode 
                 ? 'bg-gradient-to-br from-blue-500/20 to-purple-600/20' 
