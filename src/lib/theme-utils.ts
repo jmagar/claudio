@@ -66,7 +66,7 @@ export const themeClasses = {
    * Text colors for muted content
    */
   textMuted: (isDarkMode: boolean) =>
-    isDarkMode ? 'text-gray-500' : 'text-gray-500',
+    isDarkMode ? 'text-gray-500' : 'text-gray-400',
 
   /**
    * Hover states for interactive elements
