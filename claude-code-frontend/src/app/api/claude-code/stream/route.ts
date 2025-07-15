@@ -26,6 +26,36 @@ export async function POST(request: NextRequest) {
     
     const stream = new ReadableStream({
       async start(controller) {
+        let isClosed = false;
+        
+        const safeEnqueue = (data: Uint8Array) => {
+          if (!isClosed) {
+            try {
+              controller.enqueue(data);
+            } catch (error: any) {
+              if (error.code === 'ERR_INVALID_STATE') {
+                isClosed = true;
+                console.log('Stream controller already closed, stopping enqueue');
+              } else {
+                throw error;
+              }
+            }
+          }
+        };
+
+        const safeClose = () => {
+          if (!isClosed) {
+            try {
+              controller.close();
+              isClosed = true;
+            } catch (error: any) {
+              if (error.code !== 'ERR_INVALID_STATE') {
+                console.error('Error closing controller:', error);
+              }
+            }
+          }
+        };
+
         try {
           for await (const message of runClaudeCodeQuery({
             prompt,
@@ -35,25 +65,35 @@ export async function POST(request: NextRequest) {
             disallowedTools,
             mcpServers
           })) {
+            if (isClosed) break;
+            
             const chunk = encoder.encode(`data: ${JSON.stringify(message)}\n\n`);
-            controller.enqueue(chunk);
+            safeEnqueue(chunk);
           }
           
           // Send done signal
-          controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
-          controller.close();
+          if (!isClosed) {
+            safeEnqueue(encoder.encode(`data: [DONE]\n\n`));
+          }
+          safeClose();
         } catch (error: any) {
           console.error('Streaming error:', error);
           
-          const errorMessage = {
-            type: 'error',
-            error: error.message || 'Failed to process request',
-            authRequired: error.message?.includes('authentication') || error.message?.includes('login')
-          };
-          
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`));
-          controller.close();
+          if (!isClosed) {
+            const errorMessage = {
+              type: 'error',
+              error: error.message || 'Failed to process request',
+              authRequired: error.message?.includes('authentication') || error.message?.includes('login')
+            };
+            
+            safeEnqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`));
+          }
+          safeClose();
         }
+      },
+      
+      cancel() {
+        console.log('Stream cancelled by client');
       }
     });
 

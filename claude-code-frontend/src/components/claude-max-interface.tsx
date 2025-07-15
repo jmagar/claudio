@@ -351,8 +351,8 @@ export function ClaudeMaxInterface() {
   return (
     <div className={`h-screen flex transition-all duration-300 ${
       isDarkMode 
-        ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' 
-        : 'bg-gradient-to-br from-white via-slate-50 to-white'
+        ? 'bg-gradient-to-br from-gray-950 via-gray-900 to-black' 
+        : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
     }`}>
       
       {/* Use the extracted ConversationSidebar component */}
@@ -371,8 +371,8 @@ export function ClaudeMaxInterface() {
         {/* Header */}
         <div className={`border-b backdrop-blur-xl ${
           isDarkMode 
-            ? 'bg-slate-900/50 border-slate-700/50' 
-            : 'bg-white/50 border-slate-200/50'
+            ? 'bg-gray-950/90 border-gray-800/50 shadow-lg' 
+            : 'bg-white/90 border-gray-200/50 shadow-sm'
         }`}>
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">

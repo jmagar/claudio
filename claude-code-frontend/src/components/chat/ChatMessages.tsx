@@ -19,6 +19,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ConversationMessage } from '@/types/chat';
+import { WelcomeScreen } from './WelcomeScreen';
 
 interface ChatMessagesProps {
   messages: ConversationMessage[];
@@ -43,6 +44,11 @@ export function ChatMessages({
   onRestartFromMessage,
   onSetEditingMessageId
 }: ChatMessagesProps) {
+  // Show welcome screen when no messages
+  if (messages.length === 0 && !loading && !error) {
+    return <WelcomeScreen isDarkMode={isDarkMode} />;
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       <AnimatePresence>
@@ -68,12 +74,12 @@ export function ChatMessages({
             <div className={`max-w-[70%] ${
               message.type === 'user' ? 'order-first' : ''
             }`}>
-              <div className={`rounded-2xl px-4 py-3 ${
+              <div className={`rounded-2xl px-4 py-3 transition-all hover:scale-[1.01] ${
                 message.type === 'user'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white ml-auto'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white ml-auto shadow-lg shadow-blue-500/25'
                   : isDarkMode
-                    ? 'bg-slate-800/50 border border-slate-700/50'
-                    : 'bg-white border border-slate-200'
+                    ? 'bg-gray-900/70 border border-gray-800/50 shadow-lg shadow-black/10'
+                    : 'bg-white border border-gray-200 shadow-sm'
               }`}>
                 {editingMessageId === message.id ? (
                   <div className="space-y-2">
@@ -214,18 +220,33 @@ export function ChatMessages({
               <Bot className="h-4 w-4 text-white" />
             </AvatarFallback>
           </Avatar>
-          <div className={`rounded-2xl px-4 py-3 ${
+          <div className={`rounded-2xl px-4 py-3 transition-all ${
             isDarkMode
-              ? 'bg-slate-800/50 border border-slate-700/50'
-              : 'bg-white border border-slate-200'
+              ? 'bg-gray-900/70 border border-gray-800/50 shadow-lg shadow-black/10'
+              : 'bg-white border border-gray-200 shadow-sm'
           }`}>
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className={`text-sm ${
-                isDarkMode ? 'text-slate-400' : 'text-slate-600'
-              }`}>
-                Claude is thinking...
-              </span>
+            <div className="flex items-center gap-3">
+              <Loader2 className={`h-4 w-4 animate-spin ${
+                isDarkMode ? 'text-blue-400' : 'text-blue-600'
+              }`} />
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Claude is thinking
+                </span>
+                <div className="flex gap-1">
+                  <div className={`w-1 h-1 rounded-full animate-pulse ${
+                    isDarkMode ? 'bg-blue-400' : 'bg-blue-600'
+                  }`} style={{ animationDelay: '0ms' }} />
+                  <div className={`w-1 h-1 rounded-full animate-pulse ${
+                    isDarkMode ? 'bg-blue-400' : 'bg-blue-600'
+                  }`} style={{ animationDelay: '150ms' }} />
+                  <div className={`w-1 h-1 rounded-full animate-pulse ${
+                    isDarkMode ? 'bg-blue-400' : 'bg-blue-600'
+                  }`} style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -235,11 +256,33 @@ export function ChatMessages({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex gap-4"
+          className="max-w-2xl"
         >
-          <div className="flex items-center gap-2 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{error}</span>
+          <div className={`p-4 rounded-2xl border ${
+            isDarkMode 
+              ? 'bg-red-900/20 border-red-800/50 text-red-300' 
+              : 'bg-red-50 border-red-200 text-red-700'
+          }`}>
+            <div className="flex items-start gap-3">
+              <AlertCircle className={`h-5 w-5 mt-0.5 ${
+                isDarkMode ? 'text-red-400' : 'text-red-500'
+              }`} />
+              <div>
+                <p className="font-medium">Connection Error</p>
+                <p className={`text-sm mt-1 ${
+                  isDarkMode ? 'text-red-400/80' : 'text-red-600/80'
+                }`}>
+                  {error}
+                </p>
+                <p className={`text-xs mt-2 ${
+                  isDarkMode ? 'text-red-500' : 'text-red-600'
+                }`}>
+                  Make sure you've run <code className={`px-1 py-0.5 rounded font-mono ${
+                    isDarkMode ? 'bg-red-900/30' : 'bg-red-100'
+                  }`}>claude login</code> to authenticate.
+                </p>
+              </div>
+            </div>
           </div>
         </motion.div>
       )}

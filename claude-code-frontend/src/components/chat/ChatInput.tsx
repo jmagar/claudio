@@ -41,8 +41,8 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     return (
       <div className={`border-t backdrop-blur-xl ${
         isDarkMode 
-          ? 'bg-slate-900/50 border-slate-700/50' 
-          : 'bg-white/50 border-slate-200/50'
+          ? 'bg-gray-950/90 border-gray-800/50 shadow-lg' 
+          : 'bg-white/90 border-gray-200/50 shadow-sm'
       }`}>
         <div className="p-4">
           <div className="relative">
@@ -54,8 +54,8 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               placeholder="Message Claude Code..."
               className={`min-h-[60px] max-h-[200px] pr-12 rounded-2xl border-2 transition-all resize-none ${
                 isDarkMode
-                  ? 'bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-blue-500'
-                  : 'bg-white border-slate-300 text-slate-900 placeholder-slate-500 focus:border-blue-500'
+                  ? 'bg-gray-900/60 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500 shadow-inner'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
               } focus:ring-2 focus:ring-blue-500/20`}
               disabled={loading}
             />
@@ -86,7 +86,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           {/* Footer */}
           <div className="flex items-center justify-between mt-3">
             <span className={`text-xs ${
-              isDarkMode ? 'text-slate-500' : 'text-slate-500'
+              isDarkMode ? 'text-gray-500' : 'text-gray-500'
             }`}>
               Shift+Enter for new line
             </span>
@@ -102,7 +102,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               )}
               
               <span className={`text-xs ${
-                isDarkMode ? 'text-slate-500' : 'text-slate-500'
+                isDarkMode ? 'text-gray-500' : 'text-gray-500'
               }`}>
                 {messages.length} message{messages.length !== 1 ? 's' : ''}
               </span>
