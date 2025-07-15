@@ -10,130 +10,78 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { conversationStore, type Conversation, type ConversationMessage } from '@/lib/conversation-store';
-import { formatMessages } from '@/lib/message-utils';
+import { type ConversationMessage } from '@/lib/conversation-store';
 import { themeClasses } from '@/lib/theme-utils';
+import { generateMessageId } from '@/lib/id-utils';
 import { ConversationSidebar } from '@/components/chat/ConversationSidebar';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { SettingsPanel } from '@/components/chat/SettingsPanel';
-
-interface McpServer {
-  name: string;
-  command: string;
-  args?: string[];
-  type?: 'stdio' | 'sse' | 'http';
-  url?: string;
-  enabled: boolean;
-}
+import { useConversations } from '@/hooks/useConversations';
+import { useStreaming } from '@/hooks/useStreaming';
+import { useMcpServers } from '@/hooks/useMcpServers';
 
 export function ClaudeMaxInterface() {
   const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load conversations on component mount
-  useEffect(() => {
-    const stored = conversationStore.getAllConversations();
-    setConversations(stored);
-    if (stored.length > 0) {
-      loadConversation(stored[0]);
-    }
-  }, []);
+  // Custom hooks for managing state and logic
+  const {
+    conversations,
+    currentConversation,
+    messages,
+    setMessages,
+    createNewConversation,
+    loadConversation,
+    deleteConversation,
+    editMessage,
+    restartFromMessage
+  } = useConversations();
 
-  // Save conversation when messages change
-  useEffect(() => {
-    if (currentConversation && messages.length > 0) {
-      const updated = {
-        ...currentConversation,
-        messages,
-        updatedAt: new Date(),
-        totalTokens: messages.reduce((total, msg) => total + (msg.tokens?.total || 0), 0),
-        title: currentConversation.title === 'New Conversation' 
-          ? conversationStore.generateTitle(messages)
-          : currentConversation.title
-      };
-      conversationStore.saveConversation(updated);
-      setCurrentConversation(updated);
-      setConversations(conversationStore.getAllConversations());
-    }
-  }, [messages, currentConversation]);
+  const {
+    loading,
+    error,
+    isTyping,
+    startStreaming,
+    stopStreaming
+  } = useStreaming();
+
+  const {
+    mcpServers,
+    addMcpServer,
+    updateMcpServer,
+    removeMcpServer,
+    getEnabledServers
+  } = useMcpServers();
 
 
   const startNewConversation = () => {
-    if (loading) stopGeneration();
+    if (loading) stopStreaming();
     
-    const newConv = conversationStore.createNewConversation(
-      mcpServers
-        .filter(server => server.enabled)
-        .reduce((acc, server) => {
-          acc[server.name] = {
-            command: server.command,
-            args: server.args,
-            type: server.type || 'stdio',
-            url: server.url
-          };
-          return acc;
-        }, {} as Record<string, any>)
-    );
-    
-    setCurrentConversation(newConv);
-    setMessages([]);
-    setError(null);
-  };
-
-  const loadConversation = (conversation: Conversation) => {
-    if (loading) stopGeneration();
-    setCurrentConversation(conversation);
-    setMessages(conversation.messages);
-    setError(null);
+    const newConv = createNewConversation(getEnabledServers());
     setEditingMessageId(null);
   };
 
-  const deleteConversation = (conversationId: string) => {
-    conversationStore.deleteConversation(conversationId);
-    const remaining = conversationStore.getAllConversations();
-    setConversations(remaining);
-    
-    if (currentConversation?.id === conversationId) {
-      if (remaining.length > 0) {
-        loadConversation(remaining[0]);
-      } else {
-        startNewConversation();
-      }
+  const handleLoadConversation = (conversation: any) => {
+    if (loading) stopStreaming();
+    loadConversation(conversation);
+    setEditingMessageId(null);
+  };
+
+  const handleDeleteConversation = (conversationId: string) => {
+    const shouldCreateNew = deleteConversation(conversationId);
+    if (shouldCreateNew === null) {
+      startNewConversation();
     }
   };
 
-  const editMessage = (messageId: string, newContent: string) => {
-    const messageIndex = messages.findIndex(m => m.id === messageId);
-    if (messageIndex === -1) return;
-    
-    // Remove messages after the edited message and restart from there
-    const messagesUpToEdit = messages.slice(0, messageIndex);
-    const editedMessage = { ...messages[messageIndex], content: newContent };
-    
-    setMessages([...messagesUpToEdit, editedMessage]);
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    editMessage(messageId, newContent);
     setEditingMessageId(null);
-  };
-
-  const restartFromMessage = (messageId: string) => {
-    const messageIndex = messages.findIndex(m => m.id === messageId);
-    if (messageIndex === -1) return;
-    
-    // Keep messages up to and including the selected message
-    const messagesToKeep = messages.slice(0, messageIndex + 1);
-    setMessages(messagesToKeep);
   };
 
   const handleSubmit = async () => {
@@ -145,136 +93,17 @@ export function ClaudeMaxInterface() {
     }
     
     const userMessage: ConversationMessage = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       type: 'user',
       content: prompt,
       timestamp: new Date()
     };
     
     setMessages(prev => [...prev, userMessage]);
-    setLoading(true);
-    setError(null);
     const currentPrompt = prompt;
     setPrompt('');
     
-    // Create streaming assistant message
-    const assistantMessage: ConversationMessage = {
-      id: (Date.now() + 1).toString(),
-      type: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      streaming: true
-    };
-    
-    setMessages(prev => [...prev, assistantMessage]);
-    
-    // Track accumulated messages for proper formatting
-    const accumulatedMessages: any[] = [];
-    
-    try {
-      abortControllerRef.current = new AbortController();
-      
-      const enabledMcpServers = mcpServers
-        .filter(server => server.enabled)
-        .reduce((acc, server) => {
-          acc[server.name] = {
-            command: server.command,
-            args: server.args,
-            type: server.type || 'stdio',
-            url: server.url
-          };
-          return acc;
-        }, {} as Record<string, any>);
-
-      const response = await fetch('/api/claude-code/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          prompt: currentPrompt,
-          mcpServers: enabledMcpServers
-        }),
-        signal: abortControllerRef.current.signal
-      });
-
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
-              setLoading(false);
-              return;
-            }
-
-            try {
-              const message = JSON.parse(data);
-              
-              if (message.type === 'error') {
-                setError(message.error);
-                break;
-              }
-
-              // Add to accumulated messages and format with deduplication
-              accumulatedMessages.push(message);
-              
-              // Use the local formatMessages function for consistent formatting without duplicates
-              const formattedContent = formatMessages(accumulatedMessages);
-              
-              // Extract token usage from result messages
-              let tokenUsage = undefined;
-              if (message.type === 'result' && message.usage) {
-                tokenUsage = {
-                  input: message.usage.input_tokens || 0,
-                  output: message.usage.output_tokens || 0,
-                  total: message.usage.total_tokens || (message.usage.input_tokens || 0) + (message.usage.output_tokens || 0)
-                };
-              }
-              
-              if (formattedContent.trim()) {
-                setMessages(prev => prev.map(msg => 
-                  msg.id === assistantMessage.id 
-                    ? { 
-                        ...msg, 
-                        content: formattedContent,
-                        ...(tokenUsage && { tokens: tokenUsage })
-                      }
-                    : msg
-                ));
-              }
-            } catch (e) {
-              console.error('Error parsing message:', e);
-            }
-          }
-        }
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        setError('Request was cancelled');
-      } else {
-        setError('Failed to connect to Claude Code SDK');
-      }
-      // Remove the streaming message on error
-      setMessages(prev => prev.filter(msg => msg.id !== assistantMessage.id));
-    } finally {
-      setLoading(false);
-      abortControllerRef.current = null;
-    }
-  };
-
-  const stopGeneration = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    await startStreaming(currentPrompt, getEnabledServers(), setMessages);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -289,29 +118,8 @@ export function ClaudeMaxInterface() {
   };
 
   const clearChat = () => {
-    if (loading) stopGeneration();
+    if (loading) stopStreaming();
     startNewConversation();
-  };
-
-  const addMcpServer = () => {
-    const newServer: McpServer = {
-      name: `server-${Date.now()}`,
-      command: '',
-      args: [],
-      type: 'stdio',
-      enabled: false
-    };
-    setMcpServers(prev => [...prev, newServer]);
-  };
-
-  const updateMcpServer = (index: number, updates: Partial<McpServer>) => {
-    setMcpServers(prev => prev.map((server, i) => 
-      i === index ? { ...server, ...updates } : server
-    ));
-  };
-
-  const removeMcpServer = (index: number) => {
-    setMcpServers(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -321,9 +129,9 @@ export function ClaudeMaxInterface() {
       <ConversationSidebar
         conversations={conversations}
         currentConversation={currentConversation}
-        onLoadConversation={loadConversation}
+        onLoadConversation={handleLoadConversation}
         onNewConversation={startNewConversation}
-        onDeleteConversation={deleteConversation}
+        onDeleteConversation={handleDeleteConversation}
         isDarkMode={isDarkMode}
         isVisible={showSidebar}
       />
@@ -339,6 +147,7 @@ export function ClaudeMaxInterface() {
                 size="sm"
                 onClick={() => setShowSidebar(!showSidebar)}
                 className="rounded-xl"
+                aria-label={showSidebar ? "Hide sidebar" : "Show sidebar"}
               >
                 <Menu className="h-4 w-4" />
               </Button>
@@ -363,6 +172,7 @@ export function ClaudeMaxInterface() {
                 size="sm"
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="rounded-xl"
+                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
               >
                 {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
@@ -372,6 +182,7 @@ export function ClaudeMaxInterface() {
                 size="sm"
                 onClick={() => setShowSettings(!showSettings)}
                 className="rounded-xl"
+                aria-label={showSettings ? "Hide settings" : "Show settings"}
               >
                 <Settings className="h-4 w-4" />
               </Button>
@@ -381,6 +192,7 @@ export function ClaudeMaxInterface() {
                 size="sm"
                 onClick={clearChat}
                 className="rounded-xl"
+                aria-label="Start new conversation"
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -396,7 +208,7 @@ export function ClaudeMaxInterface() {
           editingMessageId={editingMessageId}
           isDarkMode={isDarkMode}
           onCopyToClipboard={copyToClipboard}
-          onEditMessage={editMessage}
+          onEditMessage={handleEditMessage}
           onRestartFromMessage={restartFromMessage}
           onSetEditingMessageId={setEditingMessageId}
         />
@@ -411,7 +223,7 @@ export function ClaudeMaxInterface() {
           isDarkMode={isDarkMode}
           onPromptChange={setPrompt}
           onSubmit={handleSubmit}
-          onStopGeneration={stopGeneration}
+          onStopGeneration={stopStreaming}
           onKeyPress={handleKeyPress}
         />
       </div>

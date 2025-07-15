@@ -30,7 +30,7 @@ import {
 import { ScrollButton } from '@/components/ui/scroll-button';
 import { ConversationMessage } from '@/types/chat';
 import { WelcomeScreen } from './WelcomeScreen';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 
 function ClientOnlyScrollButton() {
   const [isMounted, setIsMounted] = useState(false);
@@ -96,7 +96,7 @@ interface ChatMessagesProps {
   onSetEditingMessageId: (id: string | null) => void;
 }
 
-export function ChatMessages({
+export const ChatMessages = memo(function ChatMessages({
   messages,
   loading,
   error,
@@ -335,4 +335,4 @@ export function ChatMessages({
       </div>
     </div>
   );
-}
+});

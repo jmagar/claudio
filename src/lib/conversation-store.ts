@@ -1,5 +1,7 @@
 'use client';
 
+import { generateConversationId } from './id-utils';
+
 export interface ConversationMessage {
   id: string;
   type: 'user' | 'assistant' | 'system';
@@ -107,7 +109,7 @@ class ConversationStore {
 
   createNewConversation(mcpServers?: Record<string, any>): Conversation {
     return {
-      id: Date.now().toString(),
+      id: generateConversationId(),
       title: 'New Conversation',
       messages: [],
       createdAt: new Date(),

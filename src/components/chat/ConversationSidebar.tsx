@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { AnimationErrorBoundary } from '@/components/ui/error-boundary';
 import {
   Plus,
   Search,
@@ -25,7 +26,7 @@ interface ConversationSidebarProps {
   isVisible: boolean;
 }
 
-export function ConversationSidebar({
+export const ConversationSidebar = memo(function ConversationSidebar({
   conversations,
   currentConversation,
   onLoadConversation,
@@ -44,16 +45,17 @@ export function ConversationSidebar({
   if (!isVisible) return null;
 
   return (
-    <motion.div
-      initial={{ x: -320, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -320, opacity: 0 }}
-      transition={{ type: "spring", damping: 20 }}
-      className={`w-80 flex-shrink-0 border-r backdrop-blur-xl ${
-        isDarkMode 
-          ? 'bg-gray-950/95 border-gray-800/50 shadow-2xl' 
-          : 'bg-white/95 border-gray-200/50 shadow-xl'
-      }`}
+    <AnimationErrorBoundary>
+      <motion.div
+        initial={{ x: -320, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: -320, opacity: 0 }}
+        transition={{ type: "spring", damping: 20 }}
+        className={`w-80 flex-shrink-0 border-r backdrop-blur-xl ${
+          isDarkMode 
+            ? 'bg-gray-950/95 border-gray-800/50 shadow-2xl' 
+            : 'bg-white/95 border-gray-200/50 shadow-xl'
+        }`}
     >
       {/* Header */}
       <div className="p-6 border-b border-current/10">
@@ -173,6 +175,7 @@ export function ConversationSidebar({
           </div>
         )}
       </div>
-    </motion.div>
+      </motion.div>
+    </AnimationErrorBoundary>
   );
-}
+});
