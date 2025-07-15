@@ -14,12 +14,75 @@ import {
   RotateCcw, 
   Hash 
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { 
+  Message, 
+  MessageAvatar, 
+  MessageContent, 
+  MessageActions, 
+  MessageAction 
+} from '@/components/ui/message';
+import { Loader } from '@/components/ui/loader';
+import { 
+  ChatContainerRoot, 
+  ChatContainerContent, 
+  ChatContainerScrollAnchor 
+} from '@/components/ui/chat-container';
+import { ScrollButton } from '@/components/ui/scroll-button';
 import { ConversationMessage } from '@/types/chat';
 import { WelcomeScreen } from './WelcomeScreen';
+import { useEffect, useState } from 'react';
+
+function ClientOnlyScrollButton() {
+  const [isMounted, setIsMounted] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    
+    const handleScroll = () => {
+      const container = document.querySelector('[role="log"]');
+      if (container) {
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
+      }
+    };
+    
+    const container = document.querySelector('[role="log"]');
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+  
+  const scrollToBottom = () => {
+    const container = document.querySelector('[role="log"]');
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+  
+  if (!isMounted) return null;
+  
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className={`h-10 w-10 rounded-full transition-all duration-150 ease-out ${
+        !isAtBottom
+          ? "translate-y-0 scale-100 opacity-100"
+          : "pointer-events-none translate-y-4 scale-95 opacity-0"
+      }`}
+      onClick={scrollToBottom}
+    >
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+      </svg>
+    </Button>
+  );
+}
 
 interface ChatMessagesProps {
   messages: ConversationMessage[];
@@ -45,12 +108,14 @@ export function ChatMessages({
   onSetEditingMessageId
 }: ChatMessagesProps) {
   return (
-    <div className="flex-1 overflow-y-auto">
-      {/* Show welcome screen when no messages */}
-      {messages.length === 0 && !loading && !error ? (
-        <WelcomeScreen isDarkMode={isDarkMode} />
-      ) : (
-        <div className="p-6 space-y-6">
+    <div className="flex-1 relative">
+      <ChatContainerRoot className="h-full">
+        <ChatContainerContent className="p-6 space-y-6">
+          {/* Show welcome screen when no messages */}
+          {messages.length === 0 && !loading && !error ? (
+            <WelcomeScreen isDarkMode={isDarkMode} />
+          ) : (
+            <div className="space-y-6">
       <AnimatePresence>
         {messages.map((message, index) => (
           <motion.div
@@ -59,152 +124,131 @@ export function ChatMessages({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className={`group flex gap-4 ${
-              message.type === 'user' ? 'justify-end' : 'justify-start'
+            className={`group ${
+              message.type === 'user' ? 'flex justify-end' : 'flex justify-start'
             }`}
           >
-            {message.type === 'assistant' && (
-              <Avatar className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600">
-                <AvatarFallback>
-                  <Bot className="h-4 w-4 text-white" />
-                </AvatarFallback>
-              </Avatar>
-            )}
-
-            <div className={`max-w-[70%] ${
-              message.type === 'user' ? 'order-first' : ''
+            <Message className={`max-w-[70%] ${
+              message.type === 'user' ? 'flex-row-reverse' : ''
             }`}>
-              <div className={`rounded-2xl px-4 py-3 transition-all hover:scale-[1.01] ${
-                message.type === 'user'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white ml-auto shadow-lg shadow-blue-500/25'
-                  : isDarkMode
-                    ? 'bg-gray-900/70 border border-gray-800/50 shadow-lg shadow-black/10'
-                    : 'bg-white border border-gray-200 shadow-sm'
-              }`}>
-                {editingMessageId === message.id ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      defaultValue={message.content}
-                      className="min-h-[100px]"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.metaKey) {
-                          onEditMessage(message.id, e.currentTarget.value);
-                        }
-                      }}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          const textarea = e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement;
-                          onEditMessage(message.id, textarea.value);
+              <MessageAvatar
+                src=""
+                alt={message.type === 'user' ? 'User' : 'Assistant'}
+                fallback={message.type === 'user' ? 'U' : 'A'}
+                className={`w-8 h-8 ${
+                  message.type === 'user' 
+                    ? 'bg-gradient-to-r from-green-500 to-blue-500' 
+                    : 'bg-gradient-to-r from-blue-500 to-purple-600'
+                }`}
+              />
+
+              <div className="flex-1 min-w-0">
+                <div className={`rounded-2xl px-4 py-3 transition-all hover:scale-[1.01] ${
+                  message.type === 'user'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white ml-auto shadow-lg shadow-blue-500/25'
+                    : isDarkMode
+                      ? 'bg-gray-900/70 border border-gray-800/50 shadow-lg shadow-black/10'
+                      : 'bg-white border border-gray-200 shadow-sm'
+                }`}>
+                  {editingMessageId === message.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        defaultValue={message.content}
+                        className="min-h-[100px]"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && e.metaKey) {
+                            onEditMessage(message.id, e.currentTarget.value);
+                          }
                         }}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onSetEditingMessageId(null)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {message.type === 'assistant' ? (
-                      <div className={`prose prose-sm max-w-none ${
-                        isDarkMode ? 'prose-invert' : ''
-                      }`}>
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          components={{
-                            code(props: any) {
-                              const {node, inline, className, children, ...rest} = props;
-                              const match = /language-(\w+)/.exec(className || '');
-                              return !inline && match ? (
-                                <SyntaxHighlighter
-                                  style={isDarkMode ? oneDark : oneLight}
-                                  language={match[1]}
-                                  PreTag="div"
-                                  className="rounded-lg !my-2"
-                                  {...rest}
-                                >
-                                  {String(children).replace(/\n$/, '')}
-                                </SyntaxHighlighter>
-                              ) : (
-                                <code className={className} {...rest}>
-                                  {children}
-                                </code>
-                              );
-                            }
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            const textarea = e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement;
+                            onEditMessage(message.id, textarea.value);
                           }}
                         >
-                          {message.content}
-                        </ReactMarkdown>
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onSetEditingMessageId(null)}
+                        >
+                          Cancel
+                        </Button>
                       </div>
-                    ) : (
-                      <p className="text-sm">{message.content}</p>
+                    </div>
+                  ) : (
+                    <MessageContent
+                      markdown={message.type === 'assistant'}
+                      className={`${
+                        message.type === 'user' 
+                          ? 'bg-transparent text-white' 
+                          : isDarkMode 
+                            ? 'bg-transparent prose-invert' 
+                            : 'bg-transparent'
+                      } prose prose-sm max-w-none`}
+                    >
+                      {message.content}
+                    </MessageContent>
+                  )}
+                </div>
+
+                {/* Message metadata */}
+                <div className={`flex items-center justify-between mt-2 px-2 text-xs ${
+                  isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                }`}>
+                  <div className="flex items-center gap-4">
+                    <span>{message.timestamp.toLocaleTimeString()}</span>
+                    {message.tokens && (
+                      <span className="flex items-center gap-1">
+                        <Hash className="h-3 w-3" />
+                        {message.tokens.total}
+                      </span>
                     )}
                   </div>
-                )}
-              </div>
-
-              {/* Message metadata */}
-              <div className={`flex items-center justify-between mt-2 px-2 text-xs ${
-                isDarkMode ? 'text-slate-400' : 'text-slate-500'
-              }`}>
-                <div className="flex items-center gap-4">
-                  <span>{message.timestamp.toLocaleTimeString()}</span>
-                  {message.tokens && (
-                    <span className="flex items-center gap-1">
-                      <Hash className="h-3 w-3" />
-                      {message.tokens.total}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onCopyToClipboard(message.content)}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
                   
-                  {message.type === 'user' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onSetEditingMessageId(message.id)}
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Edit3 className="h-3 w-3" />
-                    </Button>
-                  )}
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRestartFromMessage(message.id)}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                  </Button>
+                  <MessageActions className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MessageAction tooltip="Copy message">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onCopyToClipboard(message.content)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </MessageAction>
+                    
+                    {message.type === 'user' && (
+                      <MessageAction tooltip="Edit message">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onSetEditingMessageId(message.id)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                      </MessageAction>
+                    )}
+                    
+                    <MessageAction tooltip="Restart from here">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRestartFromMessage(message.id)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                      </Button>
+                    </MessageAction>
+                  </MessageActions>
                 </div>
               </div>
-            </div>
-
-            {message.type === 'user' && (
-              <Avatar className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500">
-                <AvatarFallback>
-                  <User className="h-4 w-4 text-white" />
-                </AvatarFallback>
-              </Avatar>
-            )}
+            </Message>
           </motion.div>
         ))}
       </AnimatePresence>
@@ -213,42 +257,34 @@ export function ChatMessages({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex gap-4"
+          className="flex justify-start"
         >
-          <Avatar className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600">
-            <AvatarFallback>
-              <Bot className="h-4 w-4 text-white" />
-            </AvatarFallback>
-          </Avatar>
-          <div className={`rounded-2xl px-4 py-3 transition-all ${
-            isDarkMode
-              ? 'bg-gray-900/70 border border-gray-800/50 shadow-lg shadow-black/10'
-              : 'bg-white border border-gray-200 shadow-sm'
-          }`}>
-            <div className="flex items-center gap-3">
-              <Loader2 className={`h-4 w-4 animate-spin ${
-                isDarkMode ? 'text-blue-400' : 'text-blue-600'
-              }`} />
-              <div className="flex items-center gap-2">
+          <Message>
+            <MessageAvatar
+              src=""
+              alt="Assistant"
+              fallback="A"
+              className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600"
+            />
+            <div className={`${
+              isDarkMode
+                ? 'bg-gray-900/70 border border-gray-800/50 shadow-lg shadow-black/10'
+                : 'bg-white border border-gray-200 shadow-sm'
+            } rounded-2xl px-4 py-3`}>
+              <div className="flex items-center gap-3">
+                <Loader 
+                  variant="typing" 
+                  size="sm" 
+                  className={isDarkMode ? 'text-blue-400' : 'text-blue-600'} 
+                />
                 <span className={`text-sm font-medium ${
                   isDarkMode ? 'text-gray-300' : 'text-gray-700'
                 }`}>
                   Claude is thinking
                 </span>
-                <div className="flex gap-1">
-                  <div className={`w-1 h-1 rounded-full animate-pulse ${
-                    isDarkMode ? 'bg-blue-400' : 'bg-blue-600'
-                  }`} style={{ animationDelay: '0ms' }} />
-                  <div className={`w-1 h-1 rounded-full animate-pulse ${
-                    isDarkMode ? 'bg-blue-400' : 'bg-blue-600'
-                  }`} style={{ animationDelay: '150ms' }} />
-                  <div className={`w-1 h-1 rounded-full animate-pulse ${
-                    isDarkMode ? 'bg-blue-400' : 'bg-blue-600'
-                  }`} style={{ animationDelay: '300ms' }} />
-                </div>
               </div>
             </div>
-          </div>
+          </Message>
         </motion.div>
       )}
 
@@ -286,8 +322,17 @@ export function ChatMessages({
           </div>
         </motion.div>
       )}
-        </div>
-      )}
+            </div>
+          )}
+          
+          <ChatContainerScrollAnchor />
+        </ChatContainerContent>
+      </ChatContainerRoot>
+      
+      {/* Scroll to bottom button - only show when mounted */}
+      <div className="absolute bottom-4 right-4">
+        <ClientOnlyScrollButton />
+      </div>
     </div>
   );
 }

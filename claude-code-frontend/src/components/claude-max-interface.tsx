@@ -40,7 +40,6 @@ export function ClaudeMaxInterface() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -52,11 +51,6 @@ export function ClaudeMaxInterface() {
       loadConversation(stored[0]);
     }
   }, []);
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   // Save conversation when messages change
   useEffect(() => {
@@ -406,7 +400,6 @@ export function ClaudeMaxInterface() {
           onRestartFromMessage={restartFromMessage}
           onSetEditingMessageId={setEditingMessageId}
         />
-        <div ref={messagesEndRef} />
 
         {/* Input */}
         <ChatInput

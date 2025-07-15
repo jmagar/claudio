@@ -2,7 +2,13 @@
 
 import { forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { 
+  PromptInput, 
+  PromptInputTextarea, 
+  PromptInputActions, 
+  PromptInputAction 
+} from '@/components/ui/prompt-input';
+import { PromptSuggestion } from '@/components/ui/prompt-suggestion';
 import { Send, X } from 'lucide-react';
 
 interface McpServer {
@@ -38,50 +44,93 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     onStopGeneration,
     onKeyPress
   }, ref) => {
+    const suggestions = [
+      "Help me debug this code",
+      "Explain how this works",
+      "Write unit tests for this function",
+      "Refactor this code to be more efficient",
+      "Add error handling",
+      "Generate documentation"
+    ];
+
+    const handleSuggestionClick = (suggestion: string) => {
+      onPromptChange(suggestion);
+    };
+
     return (
       <div className={`border-t backdrop-blur-xl ${
         isDarkMode 
           ? 'bg-gray-950/90 border-gray-800/50 shadow-lg' 
           : 'bg-white/90 border-gray-200/50 shadow-sm'
       }`}>
+        {/* Prompt Suggestions */}
+        {messages.length === 0 && !loading && (
+          <div className="p-4 pb-2">
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((suggestion, index) => (
+                <PromptSuggestion
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="text-xs"
+                  size="sm"
+                >
+                  {suggestion}
+                </PromptSuggestion>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div className="p-4">
-          <div className="relative">
-            <Textarea
-              ref={ref}
-              value={prompt}
-              onChange={(e) => onPromptChange(e.target.value)}
-              onKeyDown={onKeyPress}
+          <PromptInput
+            value={prompt}
+            onValueChange={onPromptChange}
+            onSubmit={onSubmit}
+            isLoading={loading}
+            maxHeight={200}
+            className={`transition-all ${
+              isDarkMode
+                ? 'bg-gray-900/60 border-gray-700 focus-within:border-blue-500 shadow-inner'
+                : 'bg-white border-gray-300 focus-within:border-blue-500'
+            } focus-within:ring-2 focus-within:ring-blue-500/20`}
+          >
+            <PromptInputTextarea
               placeholder="Message Claude Code..."
-              className={`min-h-[60px] max-h-[200px] pr-12 rounded-2xl border-2 transition-all resize-none ${
+              className={`${
                 isDarkMode
-                  ? 'bg-gray-900/60 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500 shadow-inner'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
-              } focus:ring-2 focus:ring-blue-500/20`}
+                  ? 'text-white placeholder-gray-400'
+                  : 'text-gray-900 placeholder-gray-500'
+              }`}
+              onKeyDown={onKeyPress}
               disabled={loading}
             />
             
-            <div className="absolute bottom-2 right-2 flex items-center gap-2">
+            <PromptInputActions>
               {loading ? (
-                <Button
-                  onClick={onStopGeneration}
-                  size="sm"
-                  variant="outline"
-                  className="rounded-xl"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <PromptInputAction tooltip="Stop generation">
+                  <Button
+                    onClick={onStopGeneration}
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </PromptInputAction>
               ) : (
-                <Button
-                  onClick={onSubmit}
-                  disabled={!prompt.trim()}
-                  size="sm"
-                  className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
+                <PromptInputAction tooltip="Send message">
+                  <Button
+                    onClick={onSubmit}
+                    disabled={!prompt.trim()}
+                    size="sm"
+                    className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </PromptInputAction>
               )}
-            </div>
-          </div>
+            </PromptInputActions>
+          </PromptInput>
           
           {/* Footer */}
           <div className="flex items-center justify-between mt-3">
