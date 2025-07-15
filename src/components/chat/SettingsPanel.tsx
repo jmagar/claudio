@@ -39,7 +39,7 @@ interface SettingsPanelProps {
   isDarkMode: boolean;
   mcpServers: McpServer[];
   onClose: () => void;
-  onToggleDarkMode: (darkMode: boolean) => void;
+  onToggleDarkMode: () => void;
   onAddMcpServer: () => void;
   onUpdateMcpServer: (index: number, updates: Partial<McpServer>) => void;
   onRemoveMcpServer: (index: number) => void;
@@ -181,7 +181,7 @@ export function SettingsPanel({
                 <div className="flex items-center gap-3">
                   <Switch
                     checked={isDarkMode}
-                    onCheckedChange={onToggleDarkMode}
+                    onCheckedChange={() => onToggleDarkMode()}
                     className="data-[state=checked]:bg-blue-600"
                   />
                   <Moon className={`h-5 w-5 transition-colors ${

@@ -2,12 +2,23 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { formatMessages, type ClaudeMessage } from '@/lib/message-utils';
 import { type ConversationMessage } from '@/lib/conversation-store';
 import { generateMessageId } from '@/lib/id-utils';
+import { getErrorMessage } from '@/lib/error-messages';
 
 interface StreamingState {
   loading: boolean;
   error: string | null;
   isTyping: boolean;
 }
+
+interface StreamingConfig {
+  timeoutMs?: number;
+  maxRetries?: number;
+}
+
+const DEFAULT_CONFIG: StreamingConfig = {
+  timeoutMs: 30000, // 30 seconds
+  maxRetries: 3,
+};
 
 export function useStreaming() {
   const [streamingState, setStreamingState] = useState<StreamingState>({
@@ -44,6 +55,7 @@ export function useStreaming() {
     prompt: string,
     mcpServers: Record<string, unknown>,
     onUpdateMessages: (updater: (prev: ConversationMessage[]) => ConversationMessage[]) => void,
+    config: StreamingConfig = DEFAULT_CONFIG,
   ) => {
     // Abort any existing streaming operation
     if (abortControllerRef.current) {
@@ -76,9 +88,17 @@ export function useStreaming() {
     setStreamingState(prev => ({ ...prev, loading: true, error: null }));
     
     let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    const startTime = Date.now();
     
     try {
       abortControllerRef.current = new AbortController();
+      
+      // Set up timeout
+      const timeoutId = setTimeout(() => {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+      }, config.timeoutMs);
       
       const response = await fetch('/api/claude-code/stream', {
         method: 'POST',
@@ -89,6 +109,9 @@ export function useStreaming() {
         }),
         signal: abortControllerRef.current.signal,
       });
+      
+      // Clear timeout if request succeeds
+      clearTimeout(timeoutId);
 
       if (!response.body) {throw new Error('No response body');}
 
@@ -116,7 +139,8 @@ export function useStreaming() {
                 
                 if (message && typeof message === 'object' && 'type' in message && message.type === 'error') {
                   const errorMessage = message as { error?: string };
-                  setStreamingState(prev => ({ ...prev, error: errorMessage.error || 'Unknown error', loading: false }));
+                  const errorInfo = getErrorMessage(errorMessage.error || 'unknown');
+                  setStreamingState(prev => ({ ...prev, error: errorInfo.message, loading: false }));
                   break;
                 }
 
@@ -167,9 +191,14 @@ export function useStreaming() {
       }
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
-        setStreamingState(prev => ({ ...prev, error: 'Request was cancelled', loading: false }));
+        // Check if this was a timeout or manual cancellation
+        const isTimeout = Date.now() - startTime >= (config.timeoutMs || DEFAULT_CONFIG.timeoutMs!);
+        const errorKey = isTimeout ? 'timeout' : 'stream_abort';
+        const errorInfo = getErrorMessage(errorKey);
+        setStreamingState(prev => ({ ...prev, error: errorInfo.message, loading: false }));
       } else {
-        setStreamingState(prev => ({ ...prev, error: 'Failed to connect to Claude Code SDK', loading: false }));
+        const errorInfo = getErrorMessage(error instanceof Error ? error : 'sdk_error');
+        setStreamingState(prev => ({ ...prev, error: errorInfo.message, loading: false }));
       }
       // Don't remove the streaming message on error - preserve partial content
       onUpdateMessages(prev => prev.map(msg => 

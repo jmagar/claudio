@@ -1,5 +1,10 @@
+import { ThemeProvider } from '@/context/theme';
 import { ClaudeMaxInterface } from '@/components/claude-max-interface';
 
 export default function Home() {
-  return <ClaudeMaxInterface />;
+  return (
+    <ThemeProvider>
+      <ClaudeMaxInterface />
+    </ThemeProvider>
+  );
 }

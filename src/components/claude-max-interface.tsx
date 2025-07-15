@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useTheme } from '@/context/theme';
 import { Button } from '@/components/ui/button';
 import { 
   Settings, 
@@ -24,7 +25,7 @@ import { useMcpServers } from '@/hooks/useMcpServers';
 export function ClaudeMaxInterface() {
   const [prompt, setPrompt] = useState('');
   const [showSettings, setShowSettings] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const { isDarkMode, toggleTheme } = useTheme();
   const [showSidebar, setShowSidebar] = useState(true);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -169,7 +170,7 @@ export function ClaudeMaxInterface() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                onClick={toggleTheme}
                 className="rounded-xl"
                 aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
@@ -233,7 +234,7 @@ export function ClaudeMaxInterface() {
         isDarkMode={isDarkMode}
         mcpServers={mcpServers}
         onClose={() => setShowSettings(false)}
-        onToggleDarkMode={setIsDarkMode}
+        onToggleDarkMode={toggleTheme}
         onAddMcpServer={addMcpServer}
         onUpdateMcpServer={updateMcpServer}
         onRemoveMcpServer={removeMcpServer}

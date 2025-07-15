@@ -1,21 +1,17 @@
-// Robust ID generator to ensure uniqueness
-let counter = 0;
-let lastTimestamp = 0;
+// Robust ID generator using crypto.randomUUID() for maximum uniqueness
+let fallbackCounter = 0;
 
 export function generateId(): string {
-  const timestamp = Date.now();
-  
-  // If we get the same timestamp, increment counter
-  if (timestamp === lastTimestamp) {
-    counter++;
-  } else {
-    counter = 0;
-    lastTimestamp = timestamp;
+  // Use crypto.randomUUID() if available (modern browsers and Node.js)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
   }
   
-  // Add random component for extra uniqueness
-  const random = Math.random().toString(36).substr(2, 4);
-  return `${timestamp}-${counter}-${random}`;
+  // Enhanced fallback for older environments with guaranteed uniqueness
+  const timestamp = Date.now();
+  const counter = (fallbackCounter++) % 10000; // Reset counter after 10000 to keep IDs manageable
+  const random = Math.random().toString(36).substr(2, 9);
+  return `${timestamp}-${counter.toString().padStart(4, '0')}-${random}`;
 }
 
 export function generateConversationId(): string {

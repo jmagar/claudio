@@ -1,50 +1,17 @@
 /**
- * Utilities for formatting and processing Claude Code messages
+ * Utilities for validating and sanitizing Claude Code messages
  */
 
-export interface ClaudeMessage {
-  type: string;
-  message?: {
-    content: string | Array<{ type: string; text?: string; [key: string]: unknown }>;
-  };
-  result?: string;
-  subtype?: string;
-  [key: string]: unknown;
-}
-
-/**
- * Formats Claude Code SDK messages by extracting unique text content
- * and removing duplicates that can occur in streaming responses
- */
-export function formatMessages(messages: ClaudeMessage[]): string {
-  const uniqueContent: string[] = [];
-  
-  for (const message of messages) {
-    if (message.type === 'assistant' && message.message) {
-      const content = message.message.content;
-      let textContent = '';
-      
-      if (typeof content === 'string') {
-        textContent = content;
-      } else if (Array.isArray(content)) {
-        textContent = content
-          .map(block => block.type === 'text' ? block.text : JSON.stringify(block, null, 2))
-          .join('\n');
-      }
-      
-      if (textContent.trim() && !uniqueContent.some(existing => existing.includes(textContent.trim()))) {
-        uniqueContent.push(textContent);
-      }
-    } else if (message.type === 'result' && message.subtype === 'success') {
-      const resultContent = message.result || '';
-      if (resultContent.trim() && !uniqueContent.some(existing => existing.includes(resultContent.trim()))) {
-        uniqueContent.push(resultContent);
-      }
-    }
-  }
-  
-  return uniqueContent.join('\n\n');
-}
+// Re-export formatting functions from message-formatter for backward compatibility
+export { 
+  formatMessages, 
+  formatSingleMessage, 
+  deduplicateMessages, 
+  extractCodeBlocks, 
+  estimateReadingTime,
+  type ClaudeMessage,
+  type FormattedMessage,
+} from './message-formatter';
 
 /**
  * Whitelist of approved MCP server packages and commands
