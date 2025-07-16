@@ -22,6 +22,11 @@ export interface LoaderProps {
   className?: string
 }
 
+/**
+ * Displays a spinning circular loader with customizable size.
+ *
+ * Renders an animated circular indicator for loading states, supporting small, medium, and large sizes.
+ */
 export function CircularLoader({
   className,
   size = 'md',
@@ -48,6 +53,11 @@ export function CircularLoader({
   );
 }
 
+/**
+ * Displays a classic spinner animation with 12 fading bars arranged in a circle.
+ *
+ * The size prop controls the overall dimensions and bar thickness. Includes a visually hidden "Loading" label for accessibility.
+ */
 export function ClassicLoader({
   className,
   size = 'md',
@@ -94,6 +104,11 @@ export function ClassicLoader({
   );
 }
 
+/**
+ * Displays a pulsing circular loader animation.
+ *
+ * Renders a single circle with a pulsing border, sized according to the `size` prop.
+ */
 export function PulseLoader({
   className,
   size = 'md',
@@ -115,6 +130,11 @@ export function PulseLoader({
   );
 }
 
+/**
+ * Renders a single pulsing dot loader animation with customizable size.
+ *
+ * The loader displays as a circular dot that pulses continuously, suitable for indicating loading states in compact UI areas.
+ */
 export function PulseDotLoader({
   className,
   size = 'md',
@@ -141,6 +161,11 @@ export function PulseDotLoader({
   );
 }
 
+/**
+ * Displays three animated bouncing dots as a loading indicator.
+ *
+ * The size of the dots and container is determined by the `size` prop. Each dot animates with a staggered delay to create a sequential bounce effect. Includes a visually hidden "Loading" label for accessibility.
+ */
 export function DotsLoader({
   className,
   size = 'md',
@@ -185,6 +210,11 @@ export function DotsLoader({
   );
 }
 
+/**
+ * Displays a typing indicator with three animated dots, each appearing in sequence.
+ *
+ * The size of the dots and container adjusts based on the `size` prop.
+ */
 export function TypingLoader({
   className,
   size = 'md',
@@ -229,6 +259,11 @@ export function TypingLoader({
   );
 }
 
+/**
+ * Displays a wave-style loading animation with five animated vertical bars.
+ *
+ * The height and width of each bar are determined by the `size` prop. Each bar animates with a staggered delay to create a wave effect. Includes a visually hidden "Loading" label for accessibility.
+ */
 export function WaveLoader({
   className,
   size = 'md',
@@ -280,6 +315,11 @@ export function WaveLoader({
   );
 }
 
+/**
+ * Displays a loading indicator with three animated vertical bars that wave up and down.
+ *
+ * The size prop controls the height, width, and spacing of the bars.
+ */
 export function BarsLoader({
   className,
   size = 'md',
@@ -318,6 +358,11 @@ export function BarsLoader({
   );
 }
 
+/**
+ * Displays a terminal-style loading indicator with a prompt and blinking cursor.
+ *
+ * The size prop adjusts the dimensions of the prompt and cursor.
+ */
 export function TerminalLoader({
   className,
   size = 'md',
@@ -365,6 +410,13 @@ export function TerminalLoader({
   );
 }
 
+/**
+ * Displays a text string with a blinking animation to indicate loading.
+ *
+ * @param text - The text to display; defaults to "Thinking"
+ * @param size - The size of the text ('sm', 'md', or 'lg'); defaults to 'md'
+ * @param className - Additional CSS classes to apply
+ */
 export function TextBlinkLoader({
   text = 'Thinking',
   className,
@@ -393,6 +445,13 @@ export function TextBlinkLoader({
   );
 }
 
+/**
+ * Displays a text string with a shimmering gradient animation to indicate loading.
+ *
+ * @param text - The text to display with the shimmer effect
+ * @param size - The size of the text ('sm', 'md', or 'lg')
+ * @param className - Additional CSS classes to apply
+ */
 export function TextShimmerLoader({
   text = 'Thinking',
   className,
@@ -423,6 +482,11 @@ export function TextShimmerLoader({
   );
 }
 
+/**
+ * Displays a text string followed by three animated dots to indicate loading.
+ *
+ * The text and dot sizes are determined by the `size` prop. The dots animate in sequence to create a loading effect.
+ */
 export function TextDotsLoader({
   className,
   text = 'Thinking',
@@ -460,6 +524,17 @@ export function TextDotsLoader({
   );
 }
 
+/**
+ * Renders a loading animation based on the specified variant and size.
+ *
+ * Selects and displays one of several animated loader components, such as spinners, dots, bars, or text-based effects. The loader can be customized by variant, size, optional text (for text-based loaders), and additional CSS classes.
+ *
+ * @param variant - The style of loader animation to display (e.g., 'circular', 'classic', 'pulse', etc.).
+ * @param size - The size of the loader ('sm', 'md', or 'lg').
+ * @param text - Optional text to display for text-based loaders.
+ * @param className - Additional CSS classes to apply to the loader.
+ * @returns The corresponding loader component for the chosen variant.
+ */
 function Loader({
   variant = 'circular',
   size = 'md',

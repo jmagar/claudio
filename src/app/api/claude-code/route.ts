@@ -5,8 +5,12 @@ import { claudeCodeRateLimit } from '@/lib/rate-limit';
 import { validateClaudeCodeRequest, validateRequestSize } from '@/lib/input-validation';
 
 /**
- * Validates that the provided object is a valid Record<string, McpServerConfig>
- * Returns an empty object if validation fails to prevent runtime crashes
+ * Sanitizes and validates a map of MCP server configurations, returning only valid entries.
+ *
+ * Ensures each server entry is an object with a valid `command` string, and includes optional fields such as `args` (array of strings) and `url` (for `sse` or `http` types). Invalid or incomplete entries are omitted from the result.
+ *
+ * @param mcpServers - The input object to validate as MCP server configurations
+ * @returns An object containing only valid MCP server configurations
  */
 function validateMcpServers(mcpServers: unknown): Record<string, any> {
   if (!mcpServers || typeof mcpServers !== 'object') {
@@ -61,6 +65,13 @@ function validateMcpServers(mcpServers: unknown): Record<string, any> {
   return validatedServers;
 }
 
+/**
+ * Handles POST requests to the Claude Code API endpoint, enforcing rate limiting, request size validation, and input validation before processing the request.
+ *
+ * Validates and sanitizes the request body, including prompt, system prompt, turn limits, tool restrictions, and MCP server configurations. If validation passes, forwards the request to the Claude Code backend and returns the formatted response, raw messages, and message count. Responds with appropriate HTTP status codes and error messages for rate limiting, invalid input, authentication errors, or other failures.
+ *
+ * @returns A JSON response containing the Claude Code output, message details, and rate limit headers.
+ */
 export async function POST(request: NextRequest) {
   try {
     // Check rate limit

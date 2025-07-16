@@ -15,6 +15,13 @@ interface WelcomeScreenProps {
   isDarkMode: boolean;
 }
 
+/**
+ * Renders an animated welcome screen with feature highlights and usage tips, adapting its appearance for dark or light mode.
+ *
+ * Displays a hero section, a grid of feature suggestion cards, and a "Pro Tips" section, all styled and animated for an engaging onboarding experience.
+ *
+ * @param isDarkMode - Whether to use dark mode styling for the interface.
+ */
 export function WelcomeScreen({ isDarkMode }: WelcomeScreenProps) {
   const suggestions = [
     {

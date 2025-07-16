@@ -28,6 +28,13 @@ export type UseTextStreamResult = {
   resume: () => void
 }
 
+/**
+ * Provides streaming and animated display of text in either "typewriter" or "fade" mode, supporting both static strings and asynchronous text streams.
+ *
+ * Manages internal state for the currently displayed text, completion status, and segmented text for fade animations. Supports configurable animation speed, fade duration, segment delay, and character chunk size. Exposes control methods to reset, start, pause, and resume the animation, and invokes optional callbacks on completion or error.
+ *
+ * @returns An object containing the displayed text, completion status, text segments (for fade mode), animation parameter getters, and control methods.
+ */
 function useTextStream({
   textStream,
   speed = 20,
@@ -287,6 +294,11 @@ export type ResponseStreamProps = {
   characterChunkSize?: number // Custom characters per frame for typewriter mode (overrides speed)
 }
 
+/**
+ * Renders streamed text with animated effects in either "typewriter" or "fade" mode.
+ *
+ * Displays text from a string or asynchronous iterable, animating its appearance according to the selected mode and speed. Supports customization of animation parameters and container element type. Calls the `onComplete` callback when streaming finishes.
+ */
 function ResponseStream({
   textStream,
   mode = 'typewriter',

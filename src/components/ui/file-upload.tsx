@@ -30,6 +30,14 @@ export type FileUploadProps = {
   disabled?: boolean
 }
 
+/**
+ * Provides file upload functionality with drag-and-drop and file input support, exposing upload state and controls via context to child components.
+ *
+ * Renders a hidden file input and manages global drag events to detect when files are dragged over the window. Invokes the `onFilesAdded` callback with selected or dropped files, supporting both single and multiple file selection. Shares drag state, input reference, and configuration flags with descendants through context.
+ *
+ * @param onFilesAdded - Callback invoked with the selected or dropped files
+ * @param children - Components that consume the file upload context
+ */
 function FileUpload({
   onFilesAdded,
   children,
@@ -124,6 +132,11 @@ export type FileUploadTriggerProps =
     asChild?: boolean
   }
 
+/**
+ * Renders a button or custom child element that triggers the hidden file input when clicked.
+ *
+ * If `asChild` is true, clones the single child element and attaches the file input trigger behavior to it. Otherwise, renders a standard button.
+ */
 function FileUploadTrigger({
   asChild = false,
   className,
@@ -163,6 +176,11 @@ function FileUploadTrigger({
 
 type FileUploadContentProps = React.HTMLAttributes<HTMLDivElement>
 
+/**
+ * Renders a full-screen overlay indicating an active file drag operation.
+ *
+ * The overlay appears only when files are being dragged over the window, the upload is enabled, and the component is mounted. It uses a React portal to render outside the normal DOM hierarchy.
+ */
 function FileUploadContent({ className, ...props }: FileUploadContentProps) {
   const context = useContext(FileUploadContext);
   const [mounted, setMounted] = useState(false);

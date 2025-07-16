@@ -12,8 +12,13 @@ export interface McpServer {
 }
 
 /**
- * Validates and converts McpServer to McpServerConfig
- * Ensures type safety and prevents runtime errors from invalid configurations
+ * Validates an MCP server object and returns a configuration suitable for runtime use.
+ *
+ * Ensures required fields are present and correctly typed, trims string values, filters valid arguments, and includes the URL for 'sse' or 'http' server types if provided.
+ *
+ * @param server - The MCP server object to validate and convert
+ * @returns The validated and normalized server configuration object
+ * @throws If required fields (`name` or `command`) are missing or invalid
  */
 function validateMcpServerConfig(server: McpServer): any {
   // Validate required fields
@@ -53,6 +58,13 @@ function validateMcpServerConfig(server: McpServer): any {
   return config;
 }
 
+/**
+ * React hook for managing a list of MCP (Multi-Channel Processing) server configurations with validation.
+ *
+ * Provides state and functions to add, update, and remove MCP servers, as well as retrieve a record of enabled and validated server configurations.
+ *
+ * @returns An object containing the current list of MCP servers, and functions to add, update, remove, and get enabled servers.
+ */
 export function useMcpServers() {
   const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
 

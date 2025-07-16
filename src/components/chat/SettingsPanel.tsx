@@ -21,6 +21,13 @@ interface SettingsPanelProps {
   onRemoveMcpServer: (index: number) => void;
 }
 
+/**
+ * Renders an animated settings sidebar panel with theme and MCP server configuration options.
+ *
+ * Displays a slide-in panel from the right with a backdrop when visible. The panel adapts its appearance for dark or light mode and provides controls for toggling dark mode and managing a list of MCP servers. The panel can be closed by clicking the backdrop or the close button.
+ *
+ * @returns The settings panel React element, conditionally rendered based on visibility.
+ */
 export function SettingsPanel({
   isVisible,
   isDarkMode,

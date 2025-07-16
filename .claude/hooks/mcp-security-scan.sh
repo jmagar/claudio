@@ -17,7 +17,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 # Read input from stdin
 INPUT_JSON=$(cat)
 
-# Function to log security events
+# log_security_event logs a security event with timestamp, tool name, event type, and details as a JSON line to the security log file.
 log_security_event() {
     local event_type="$1"
     local details="$2"
@@ -26,7 +26,7 @@ log_security_event() {
     echo "{\"timestamp\": \"$timestamp\", \"tool\": \"$tool_name\", \"event\": \"$event_type\", \"details\": \"$details\"}" >> "$LOG_FILE"
 }
 
-# Function to check if content matches sensitive patterns
+# check_sensitive_content determines if the provided content matches any sensitive patterns of the specified type, ignoring matches that are explicitly whitelisted. Returns 0 if sensitive data is found and not whitelisted, otherwise returns 1.
 check_sensitive_content() {
     local content="$1"
     local pattern_type="$2"
@@ -56,7 +56,7 @@ check_sensitive_content() {
     return 1  # No sensitive data found
 }
 
-# Function to scan file content
+# scan_file_content checks a file's name and contents for sensitive data patterns, returning success if any are found.
 scan_file_content() {
     local file_path="$1"
     
@@ -84,7 +84,9 @@ scan_file_content() {
     return 1
 }
 
-# Main scanning logic
+# main performs a security scan on MCP request input, blocking requests containing sensitive data or suspicious input before they are sent to external services.
+#
+# The function inspects the code context, problem description, and any attached files for secrets or credentials using configurable pattern matching. It also checks for command injection attempts in specific tool inputs. If sensitive content or suspicious input is detected, the request is blocked with a structured JSON response and an appropriate log entry; otherwise, the request is allowed to proceed.
 main() {
     # Extract tool information from stdin
     local tool_name=$(echo "$INPUT_JSON" | jq -r '.tool_name // ""')

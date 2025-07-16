@@ -26,6 +26,18 @@ interface McpServerItemProps {
   onRemove: (index: number) => void;
 }
 
+/**
+ * Renders and manages the UI for a single MCP server configuration item, allowing editing, enable/disable toggling, health monitoring, and removal.
+ *
+ * Displays server details in a collapsible panel with editable fields for name, connection type, command, URL (for SSE/HTTP), and arguments. Provides immediate validation feedback for command and URL inputs. Shows server health status and allows recovery actions if enabled. Styling and icons adapt to dark mode and server type.
+ *
+ * @param server - The MCP server configuration object to display and edit.
+ * @param index - The index of this server in the list.
+ * @param isDarkMode - Whether dark mode styling should be applied.
+ * @param onUpdate - Callback to update server properties, called with index and partial updates.
+ * @param onRemove - Callback to remove the server, called with index.
+ * @returns The rendered server configuration item as a React element.
+ */
 export function McpServerItem({ 
   server, 
   index, 

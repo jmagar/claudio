@@ -19,6 +19,11 @@ interface HealthIndicatorProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
+/**
+ * Displays a visual indicator of server health status with optional details and recovery action.
+ *
+ * Renders an icon and, if enabled, detailed information about the server's health, including status, response time, uptime, error messages, and a recovery button when applicable. Adapts appearance based on dark mode and size preferences.
+ */
 export function HealthIndicator({ 
   health, 
   isDarkMode, 
@@ -159,6 +164,12 @@ export function HealthIndicator({
   );
 }
 
+/**
+ * Returns the appropriate padding class for the container based on the specified size.
+ *
+ * @param size - The size variant, one of 'sm', 'md', or 'lg'
+ * @returns The corresponding Tailwind CSS padding class for the given size
+ */
 function getContainerClasses(size: string): string {
   switch (size) {
     case 'sm':
@@ -171,6 +182,12 @@ function getContainerClasses(size: string): string {
   }
 }
 
+/**
+ * Returns the appropriate icon size classes based on the specified size.
+ *
+ * @param size - The size variant, one of 'sm', 'md', or 'lg'
+ * @returns A string of Tailwind CSS classes for icon height and width
+ */
 function getIconClasses(size: string): string {
   switch (size) {
     case 'sm':
@@ -183,6 +200,12 @@ function getIconClasses(size: string): string {
   }
 }
 
+/**
+ * Converts an uptime value in milliseconds to a human-readable string in hours, minutes, and seconds.
+ *
+ * @param uptime - The uptime duration in milliseconds.
+ * @returns The formatted uptime string, such as "2h 15m", "5m 30s", or "45s".
+ */
 function formatUptime(uptime: number): string {
   const seconds = Math.floor(uptime / 1000);
   const minutes = Math.floor(seconds / 60);

@@ -82,9 +82,12 @@ const APPROVED_MCP_PACKAGES = [
 ];
 
 /**
- * Validates an MCP server command for security using whitelist approach
- * @param command The command to validate
- * @returns Object with isValid boolean and error message if invalid
+ * Validates an MCP server command string to ensure it is safe and conforms to approved patterns.
+ *
+ * The function checks for empty input, dangerous characters, command chaining, and enforces strict rules for allowed command prefixes (`npx`, `node`, `python`, or direct executable paths). For `npx` commands, only approved packages are allowed. For script execution, only specific file extensions and safe paths are permitted.
+ *
+ * @param command - The MCP server command string to validate
+ * @returns An object indicating whether the command is valid and, if invalid, an error message describing the reason
  */
 export function validateMcpCommand(command: string): { isValid: boolean; error?: string } {
   if (!command.trim()) {
@@ -187,7 +190,12 @@ export function validateMcpCommand(command: string): { isValid: boolean; error?:
 }
 
 /**
- * Validates an MCP server URL
+ * Validates whether a given URL is a safe and allowed MCP server endpoint.
+ *
+ * Checks that the URL is non-empty, uses HTTP or HTTPS, is not a private IP address (except for localhost or 127.0.0.1), and is properly formatted.
+ *
+ * @param url - The MCP server URL to validate
+ * @returns An object indicating if the URL is valid and, if not, an error message
  */
 export function validateMcpUrl(url: string): { isValid: boolean; error?: string } {
   if (!url.trim()) {
@@ -220,7 +228,10 @@ export function validateMcpUrl(url: string): { isValid: boolean; error?: string 
 }
 
 /**
- * Sanitizes MCP server command input
+ * Removes potentially dangerous characters from an MCP server command string to reduce the risk of command injection.
+ *
+ * @param command - The input command string to sanitize
+ * @returns The sanitized command string with unsafe characters removed
  */
 export function sanitizeMcpCommand(command: string): string {
   return command.replace(/[;&|`$(){}[\]]/g, '');

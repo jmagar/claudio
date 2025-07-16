@@ -36,6 +36,12 @@ const PromptInputContext = createContext<PromptInputContextType>({
   textareaRef: React.createRef<HTMLTextAreaElement>(),
 });
 
+/**
+ * Returns the current prompt input context, providing access to prompt input state and handlers.
+ *
+ * @returns The context object containing prompt input state, value setter, and related handlers.
+ * @throws Error if called outside of a `PromptInput` provider.
+ */
 function usePromptInput() {
   const context = useContext(PromptInputContext);
   if (!context) {
@@ -54,6 +60,13 @@ type PromptInputProps = {
   className?: string
 }
 
+/**
+ * Provides context and state management for a prompt input UI, enabling child components to access and control input value, loading state, max height, and submission handling.
+ *
+ * Wraps its children in a styled container that focuses the textarea on click and enables tooltip support within its subtree.
+ *
+ * @param children - The components to render within the prompt input context
+ */
 function PromptInput({
   className,
   isLoading = false,
@@ -101,6 +114,13 @@ export type PromptInputTextareaProps = {
   disableAutosize?: boolean
 } & React.ComponentProps<typeof Textarea>
 
+/**
+ * Renders a context-aware textarea for prompt input with optional autosizing and keyboard submission.
+ *
+ * The textarea automatically adjusts its height based on content and a maximum height unless autosizing is disabled. Pressing Enter (without Shift) triggers the context's submit handler and prevents a newline from being inserted.
+ *
+ * @param disableAutosize - If true, disables automatic resizing of the textarea based on content.
+ */
 function PromptInputTextarea({
   className,
   onKeyDown,
@@ -148,6 +168,11 @@ function PromptInputTextarea({
 
 type PromptInputActionsProps = React.HTMLAttributes<HTMLDivElement>
 
+/**
+ * Renders a flex container for grouping prompt input action elements with spacing.
+ *
+ * Accepts additional HTML div attributes and custom class names.
+ */
 function PromptInputActions({
   children,
   className,
@@ -167,6 +192,14 @@ type PromptInputActionProps = {
   side?: 'top' | 'bottom' | 'left' | 'right'
 } & React.ComponentProps<typeof Tooltip>
 
+/**
+ * Renders an action element with an associated tooltip for use within a prompt input UI.
+ *
+ * The tooltip appears on hover or focus, and its position can be customized. The action is disabled if the prompt input is disabled, and click events on the trigger do not propagate to parent elements.
+ *
+ * @param tooltip - The content to display inside the tooltip.
+ * @param side - The preferred side for the tooltip to appear relative to the action element.
+ */
 function PromptInputAction({
   tooltip,
   children,

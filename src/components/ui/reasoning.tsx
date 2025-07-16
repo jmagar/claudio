@@ -20,6 +20,12 @@ const ReasoningContext = createContext<ReasoningContextType | undefined>(
   undefined,
 );
 
+/**
+ * Provides access to the current Reasoning context values.
+ *
+ * @returns The context object containing `isOpen` and `onOpenChange`.
+ * @throws Error if called outside of a Reasoning provider.
+ */
 function useReasoningContext() {
   const context = useContext(ReasoningContext);
   if (!context) {
@@ -37,6 +43,15 @@ export type ReasoningProps = {
   onOpenChange?: (open: boolean) => void
   isStreaming?: boolean
 }
+/**
+ * Provides context and state management for a collapsible reasoning section, supporting both controlled and uncontrolled open state and automatic expansion when streaming.
+ *
+ * Wraps its children in a context provider, allowing descendant components to access and control the open state.
+ *
+ * @param open - If provided, controls whether the reasoning section is open.
+ * @param onOpenChange - Callback invoked when the open state changes.
+ * @param isStreaming - If true, automatically opens the section while streaming is active.
+ */
 function Reasoning({
   children,
   className,
@@ -86,6 +101,11 @@ export type ReasoningTriggerProps = {
   className?: string
 } & React.HTMLAttributes<HTMLButtonElement>
 
+/**
+ * Renders a button that toggles the open state of the Reasoning section.
+ *
+ * Displays its children alongside a chevron icon that rotates to indicate expansion or collapse.
+ */
 function ReasoningTrigger({
   children,
   className,
@@ -119,6 +139,14 @@ export type ReasoningContentProps = {
   contentClassName?: string
 } & React.HTMLAttributes<HTMLDivElement>
 
+/**
+ * Displays collapsible content for the reasoning section, with optional Markdown rendering and animated height transitions.
+ *
+ * When open, the content smoothly expands to fit its inner content; when closed, it collapses with a transition. If `markdown` is true, the children are rendered as Markdown.
+ *
+ * @param markdown - If true, renders the children as Markdown instead of raw React nodes.
+ * @param contentClassName - Additional class name for the inner content container.
+ */
 function ReasoningContent({
   children,
   className,

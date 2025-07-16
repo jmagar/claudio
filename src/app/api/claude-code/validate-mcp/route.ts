@@ -8,6 +8,11 @@ interface ValidateMcpRequest {
   server: McpServer;
 }
 
+/**
+ * Handles POST requests to validate an MCP server configuration.
+ *
+ * Expects a JSON body containing a `server` object. Validates the server configuration and returns a JSON response indicating whether the configuration is valid, any error message, and the time taken for validation.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -37,6 +42,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * Validates an MCP server configuration by checking required fields, security constraints, and performing health checks.
+ *
+ * For HTTP or SSE servers, ensures a valid URL is provided and performs a health check on the `/health` endpoint with a timeout. For other server types, verifies that the command starts with `npx` or `node` and does not contain potentially dangerous characters.
+ *
+ * @param server - The MCP server configuration to validate
+ * @returns An object indicating whether the server is valid, an optional error message, and the response time in milliseconds
+ */
 async function validateMcpServer(server: McpServer): Promise<{
   valid: boolean;
   error?: string;

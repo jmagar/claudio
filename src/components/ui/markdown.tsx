@@ -14,11 +14,25 @@ export type MarkdownProps = {
   components?: Partial<Components>
 }
 
+/**
+ * Splits a Markdown string into an array of raw Markdown block strings.
+ *
+ * Each block corresponds to the raw source of a top-level Markdown token as parsed by the lexer.
+ *
+ * @param markdown - The Markdown text to parse into blocks
+ * @returns An array of raw Markdown block strings
+ */
 function parseMarkdownIntoBlocks(markdown: string): string[] {
   const tokens = marked.lexer(markdown);
   return tokens.map((token) => token.raw);
 }
 
+/**
+ * Extracts the programming language identifier from a CSS class string formatted as `language-<lang>`.
+ *
+ * @param className - The CSS class string to extract the language from
+ * @returns The extracted language identifier, or `'plaintext'` if not found or if `className` is undefined
+ */
 function extractLanguage(className?: string): string {
   if (!className) {return 'plaintext';}
   const match = className.match(/language-(\w+)/);
@@ -83,6 +97,16 @@ const MemoizedMarkdownBlock = memo(
 
 MemoizedMarkdownBlock.displayName = 'MemoizedMarkdownBlock';
 
+/**
+ * Renders Markdown content by splitting it into blocks and rendering each block individually with optional component overrides.
+ *
+ * Each Markdown block is rendered using a memoized component for performance, and a unique key is assigned to each block. Supports custom component overrides for Markdown elements.
+ *
+ * @param children - The Markdown text to render
+ * @param id - Optional unique identifier for the rendered blocks
+ * @param className - Optional CSS class for the container
+ * @param components - Optional ReactMarkdown component overrides
+ */
 function MarkdownComponent({
   children,
   id,

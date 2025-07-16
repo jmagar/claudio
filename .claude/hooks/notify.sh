@@ -6,7 +6,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOUNDS_DIR="$SCRIPT_DIR/sounds"
 
-# Function to play a sound file with cross-platform support
+# play_sound_file plays the specified audio file using an available system audio player, supporting macOS, Linux, and Windows environments. If no suitable player is found, the function fails silently.
 play_sound_file() {
     local sound_file="$1"
     

@@ -14,6 +14,14 @@ interface ThemeSettingsProps {
   onToggleDarkMode: () => void;
 }
 
+/**
+ * Renders a theme appearance settings panel with animated transition, allowing users to toggle between dark and light modes.
+ *
+ * Displays current theme information and provides a switch to change the theme. Styling and content adapt dynamically based on the selected mode.
+ *
+ * @param isDarkMode - Indicates whether dark mode is currently enabled.
+ * @param onToggleDarkMode - Callback invoked when the theme toggle switch is changed.
+ */
 export function ThemeSettings({ isDarkMode, onToggleDarkMode }: ThemeSettingsProps) {
   return (
     <motion.div

@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { conversationStore } from '@/lib/conversation-store';
 import { type Conversation, type ConversationMessage } from '@/types';
 
+/**
+ * React hook for managing chat conversations, message state, and persistence.
+ *
+ * Provides state and functions to create, load, edit, delete, and export conversations, as well as manage messages within the current conversation. Handles debounced saving to persistent storage, ensures UI responsiveness, and prevents race conditions during updates.
+ *
+ * @returns An object containing conversation state, messages, and functions for conversation and message management.
+ */
 export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);

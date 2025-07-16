@@ -45,6 +45,13 @@ interface SettingsPanelProps {
   onRemoveMcpServer: (index: number) => void;
 }
 
+/**
+ * Renders a settings sidebar panel for configuring application appearance and Model Context Protocol (MCP) servers.
+ *
+ * The panel allows users to toggle dark mode, view and manage a list of MCP servers, add new servers, edit server details, enable or disable servers, and remove servers. It provides animated transitions, contextual validation feedback, and adapts its appearance based on the current theme.
+ *
+ * @returns The settings panel UI, or `null` if not visible.
+ */
 export function SettingsPanel({
   isVisible,
   isDarkMode,

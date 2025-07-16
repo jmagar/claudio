@@ -15,8 +15,11 @@ interface RateLimitEntry {
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 /**
- * Simple in-memory rate limiter
- * For production, consider using Redis or a dedicated rate limiting service
+ * Creates an in-memory rate limiter function for Next.js API requests based on the provided configuration.
+ *
+ * The returned function tracks the number of requests per client (by IP address or a custom key) within a specified time window, and enforces a maximum allowed number of requests. When the limit is reached, further requests are denied until the window resets.
+ *
+ * @returns A function that, given a NextRequest, returns an object indicating whether the request is allowed, how many requests remain in the current window, and the reset time in milliseconds since epoch.
  */
 export function rateLimit(config: RateLimitConfig) {
   return (request: NextRequest): { success: boolean; remaining: number; resetTime: number } => {

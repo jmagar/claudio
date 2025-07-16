@@ -95,7 +95,12 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
 };
 
 /**
- * Get user-friendly error message from error type or raw message
+ * Returns a user-friendly error information object based on the provided error input.
+ *
+ * Analyzes the error string or Error object to classify it into a known error category and retrieves a corresponding message, suggested action, and details. If the error does not match any known category, returns a generic unknown error info with the original error message included in the details.
+ *
+ * @param error - The error input, either as a string or an Error object
+ * @returns An ErrorInfo object containing a user-facing message, optional action, and details
  */
 export function getErrorMessage(error: string | Error): ErrorInfo {
   const errorKey = typeof error === 'string' ? error : error.message;
@@ -138,7 +143,11 @@ export function getErrorMessage(error: string | Error): ErrorInfo {
 }
 
 /**
- * Format error for display in UI
+ * Converts an error input into a user-friendly object for UI display.
+ *
+ * Returns an object containing a title, detailed message, and an optional suggested action, based on the error provided.
+ *
+ * @returns An object with `title`, `message`, and optional `action` fields for display.
  */
 export function formatErrorForDisplay(error: string | Error): {
   title: string;
