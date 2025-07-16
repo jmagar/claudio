@@ -104,7 +104,7 @@ export const themeClasses = {
 /**
  * Get consistent focus ring classes
  */
-export function getFocusRing(isDarkMode: boolean): string {
+export function getFocusRing(): string {
   return 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500';
 }
 

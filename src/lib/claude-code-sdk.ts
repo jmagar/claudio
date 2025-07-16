@@ -17,9 +17,9 @@ export async function* runClaudeCodeQuery({
   disallowedTools,
   mcpServers,
 }: ClaudeCodeOptions) {
+  const abortController = new AbortController();
+  
   try {
-    const abortController = new AbortController();
-    
     for await (const message of query({
       prompt,
       abortController,
@@ -34,8 +34,12 @@ export async function* runClaudeCodeQuery({
       yield message;
     }
   } catch (error) {
-    console.error('Claude Code SDK error:', error);
     throw error;
+  } finally {
+    // Always abort the controller to clean up resources
+    if (!abortController.signal.aborted) {
+      abortController.abort();
+    }
   }
 }
 
@@ -47,7 +51,6 @@ export async function getClaudeCodeResponse(options: ClaudeCodeOptions): Promise
       messages.push(message);
     }
   } catch (error) {
-    console.error('Failed to get Claude Code response:', error);
     throw error;
   }
   

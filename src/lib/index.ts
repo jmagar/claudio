@@ -16,7 +16,6 @@ export {
   deduplicateMessages, 
   extractCodeBlocks, 
   estimateReadingTime,
-  type FormattedMessage,
 } from './message-formatter';
 
 // Theme management
@@ -27,17 +26,12 @@ export {
   applyThemeToDocument, 
   getThemeTransitionCSS, 
   prefersReducedMotion,
-  type Theme,
-  type ThemeConfig,
-  type ThemeStorage,
 } from './theme-manager';
 
 // SDK
-export { runClaudeCodeQuery, type ClaudeCodeOptions } from './claude-code-sdk';
+export { runClaudeCodeQuery } from './claude-code-sdk';
 
 // Store
 export { 
-  conversationStore, 
-  type ConversationMessage, 
-  type Conversation,
+  conversationStore,
 } from './conversation-store';

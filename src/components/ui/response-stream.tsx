@@ -135,7 +135,7 @@ function useTextStream({
         onError?.(error);
       }
     }
-  }, []);
+  }, [onError]);
 
   const markComplete = useCallback(() => {
     if (!completedRef.current) {
@@ -219,7 +219,6 @@ function useTextStream({
 
         markComplete();
       } catch (error) {
-        console.error('Error processing text stream:', error);
         markComplete();
         onError?.(error);
       }

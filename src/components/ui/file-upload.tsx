@@ -42,8 +42,8 @@ function FileUpload({
   const dragCounter = useRef(0);
 
   const handleFiles = useCallback(
-    (files: FileList) => {
-      const newFiles = Array.from(files);
+    (fileList: FileList) => {
+      const newFiles = Array.from(fileList);
       if (multiple) {
         onFilesAdded(newFiles);
       } else {

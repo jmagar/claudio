@@ -2,28 +2,15 @@
  * Message formatting utilities for Claude Code SDK responses
  */
 
-export interface ClaudeMessage {
-  type: string;
-  message?: {
-    content: string | Array<{ type: string; text?: string; [key: string]: unknown }>;
-  };
-  result?: string;
-  subtype?: string;
-  [key: string]: unknown;
-}
-
-export interface FormattedMessage {
-  content: string;
-  type: 'text' | 'code' | 'json' | 'mixed';
-  hasCode: boolean;
-  isEmpty: boolean;
-}
+import type { ClaudeMessage, FormattedMessage } from '@/types';
 
 /**
  * Formats Claude Code SDK messages by extracting unique text content
  * and removing duplicates that can occur in streaming responses
+ * Optimized for O(n) performance with content hashing
  */
 export function formatMessages(messages: ClaudeMessage[]): string {
+  const seenContent = new Set<string>();
   const uniqueContent: string[] = [];
   
   for (const message of messages) {
@@ -39,12 +26,15 @@ export function formatMessages(messages: ClaudeMessage[]): string {
           .join('\n');
       }
       
-      if (textContent.trim() && !uniqueContent.some(existing => existing.includes(textContent.trim()))) {
-        uniqueContent.push(textContent);
+      const trimmedContent = textContent.trim();
+      if (trimmedContent && !seenContent.has(trimmedContent)) {
+        seenContent.add(trimmedContent);
+        uniqueContent.push(trimmedContent);
       }
     } else if (message.type === 'result' && message.subtype === 'success') {
-      const resultContent = message.result || '';
-      if (resultContent.trim() && !uniqueContent.some(existing => existing.includes(resultContent.trim()))) {
+      const resultContent = (message.result || '').trim();
+      if (resultContent && !seenContent.has(resultContent)) {
+        seenContent.add(resultContent);
         uniqueContent.push(resultContent);
       }
     }

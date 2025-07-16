@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { generateServerId } from '@/lib/id-utils';
+import { type McpServerConfig } from '@anthropic-ai/claude-code';
 
 export interface McpServer {
   name: string;
@@ -8,6 +9,48 @@ export interface McpServer {
   type?: 'stdio' | 'sse' | 'http';
   url?: string;
   enabled: boolean;
+}
+
+/**
+ * Validates and converts McpServer to McpServerConfig
+ * Ensures type safety and prevents runtime errors from invalid configurations
+ */
+function validateMcpServerConfig(server: McpServer): any {
+  // Validate required fields
+  if (!server.name || typeof server.name !== 'string') {
+    throw new Error(`Invalid MCP server name: ${server.name}`);
+  }
+  
+  if (!server.command || typeof server.command !== 'string') {
+    throw new Error(`Invalid MCP server command for ${server.name}: ${server.command}`);
+  }
+  
+  // Create base configuration
+  const config: any = {
+    command: server.command.trim(),
+  };
+  
+  // Add optional fields based on what's provided
+  if (server.args && Array.isArray(server.args)) {
+    config.args = server.args.filter(arg => typeof arg === 'string' && arg.trim());
+  }
+  
+  // Handle different server types with their specific configurations
+  if (server.type) {
+    switch (server.type) {
+      case 'stdio':
+        // stdio servers don't need additional config
+        break;
+      case 'sse':
+      case 'http':
+        if (server.url && typeof server.url === 'string' && server.url.trim()) {
+          config.url = server.url.trim();
+        }
+        break;
+    }
+  }
+  
+  return config;
 }
 
 export function useMcpServers() {
@@ -35,20 +78,24 @@ export function useMcpServers() {
   }, []);
 
   const enabledServers = useMemo(() => {
-    return mcpServers
+    const servers: Record<string, any> = {};
+    
+    mcpServers
       .filter(server => server.enabled)
-      .reduce((acc, server) => {
-        acc[server.name] = {
-          command: server.command,
-          args: server.args,
-          type: server.type || 'stdio',
-          url: server.url,
-        };
-        return acc;
-      }, {} as Record<string, unknown>);
+      .forEach(server => {
+        try {
+          const validatedConfig = validateMcpServerConfig(server);
+          servers[server.name] = validatedConfig;
+        } catch (error) {
+          console.error(`Invalid MCP server configuration for ${server.name}:`, error);
+          // Skip invalid servers rather than crashing the entire application
+        }
+      });
+    
+    return servers;
   }, [mcpServers]);
 
-  const getEnabledServers = useCallback(() => enabledServers, [enabledServers]);
+  const getEnabledServers = useCallback((): Record<string, any> => enabledServers, [enabledServers]);
 
   return {
     mcpServers,

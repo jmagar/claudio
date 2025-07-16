@@ -26,7 +26,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.props.onError?.(error, errorInfo);
   }
 
@@ -87,7 +86,6 @@ export function AnimationErrorBoundary({ children }: { children: ReactNode }) {
         </div>
       }
       onError={(error) => {
-        console.warn('Animation error:', error.message);
       }}
     >
       {children}

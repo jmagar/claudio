@@ -9,9 +9,10 @@ export {
   deduplicateMessages, 
   extractCodeBlocks, 
   estimateReadingTime,
-  type ClaudeMessage,
-  type FormattedMessage,
 } from './message-formatter';
+
+// Re-export types from centralized location
+export type { ClaudeMessage, FormattedMessage } from '@/types';
 
 /**
  * Whitelist of approved MCP server packages and commands

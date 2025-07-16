@@ -11,7 +11,14 @@ export function generateId(): string {
   const timestamp = Date.now();
   const counter = (fallbackCounter++) % 10000; // Reset counter after 10000 to keep IDs manageable
   const random = Math.random().toString(36).substr(2, 9);
-  return `${timestamp}-${counter.toString().padStart(4, '0')}-${random}`;
+  const id = `${timestamp}-${counter.toString().padStart(4, '0')}-${random}`;
+  
+  // Ensure we never return just a timestamp
+  if (/^\d{13}$/.test(id)) {
+    return `fallback-${id}-${Math.random().toString(36).substr(2, 6)}`;
+  }
+  
+  return id;
 }
 
 export function generateConversationId(): string {

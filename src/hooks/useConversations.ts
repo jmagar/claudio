@@ -40,7 +40,7 @@ export function useConversations() {
     }, 300); // 300ms debounce
   }, []);
 
-  // Save conversation when messages change - fixed race condition
+  // Save conversation when messages change - prevent recursion by removing currentConversation dependency
   useEffect(() => {
     if (currentConversation && messages.length > 0 && currentConversation.id === currentConversationIdRef.current) {
       const updated = {
@@ -57,9 +57,16 @@ export function useConversations() {
       debouncedSave(updated);
       
       // Update current conversation state immediately for UI responsiveness
-      setCurrentConversation(updated);
+      // Use functional update to prevent dependency on currentConversation in useEffect
+      setCurrentConversation(prev => {
+        // Only update if this is still the current conversation to prevent race conditions
+        if (prev && prev.id === updated.id) {
+          return updated;
+        }
+        return prev;
+      });
     }
-  }, [messages, currentConversation, debouncedSave]);
+  }, [messages, debouncedSave]); // Removed currentConversation dependency to prevent recursion
 
   // Update conversation ID ref when conversation changes
   useEffect(() => {

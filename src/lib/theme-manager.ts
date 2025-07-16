@@ -52,7 +52,6 @@ export class LocalStorageThemeManager implements ThemeStorage {
         return stored as Theme;
       }
     } catch (error) {
-      console.warn('Failed to read theme from localStorage:', error);
     }
     return 'system';
   }
@@ -67,7 +66,6 @@ export class LocalStorageThemeManager implements ThemeStorage {
       const config = this.getThemeConfig();
       this.notifyListeners(config);
     } catch (error) {
-      console.warn('Failed to save theme to localStorage:', error);
     }
   }
 

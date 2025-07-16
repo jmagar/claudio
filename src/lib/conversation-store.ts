@@ -1,36 +1,29 @@
 'use client';
 
-import { generateConversationId } from './id-utils';
-
-export interface ConversationMessage {
-  id: string;
-  type: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-  streaming?: boolean;
-  tokens?: {
-    input: number;
-    output: number;
-    total: number;
-  };
-  editable?: boolean;
-}
-
-export interface Conversation {
-  id: string;
-  title: string;
-  messages: ConversationMessage[];
-  createdAt: Date;
-  updatedAt: Date;
-  totalTokens: number;
-  mcpServers?: Record<string, unknown>;
-}
+import { generateConversationId, generateMessageId } from './id-utils';
+import type { ConversationMessage, Conversation } from '@/types';
 
 class ConversationStore {
   private storageKey = 'claude-code-conversations';
 
   private isBrowser(): boolean {
     return typeof window !== 'undefined';
+  }
+
+  private validateAndFixId(id: string): string {
+    // If ID is just a timestamp (likely legacy data), generate a new proper ID
+    if (/^\d{13}$/.test(id)) {
+      return generateMessageId();
+    }
+    return id;
+  }
+
+  private validateAndFixConversationId(id: string): string {
+    // If ID is just a timestamp (likely legacy data), generate a new proper ID
+    if (/^\d{13}$/.test(id)) {
+      return generateConversationId();
+    }
+    return id;
   }
 
   getAllConversations(): Conversation[] {
@@ -43,18 +36,21 @@ class ConversationStore {
       const conversations = JSON.parse(stored);
       return conversations.map((conv: unknown) => {
         const conversation = conv as Record<string, unknown>;
+        // Fix conversation ID if it's a legacy timestamp
+        const fixedId = this.validateAndFixConversationId(conversation.id as string);
         return {
           ...conversation,
+          id: fixedId,
           createdAt: new Date(conversation.createdAt as string),
           updatedAt: new Date(conversation.updatedAt as string),
           messages: (conversation.messages as Array<Record<string, unknown>>).map((msg) => ({
             ...msg,
+            id: this.validateAndFixId(msg.id as string),
             timestamp: new Date(msg.timestamp as string),
           })),
         };
       });
     } catch (error) {
-      console.error('Error loading conversations:', error);
       return [];
     }
   }
@@ -81,7 +77,6 @@ class ConversationStore {
       const trimmed = conversations.slice(0, 50);
       localStorage.setItem(this.storageKey, JSON.stringify(trimmed));
     } catch (error) {
-      console.error('Error saving conversation:', error);
     }
   }
 
@@ -93,7 +88,6 @@ class ConversationStore {
       const filtered = conversations.filter(conv => conv.id !== id);
       localStorage.setItem(this.storageKey, JSON.stringify(filtered));
     } catch (error) {
-      console.error('Error deleting conversation:', error);
     }
   }
 
