@@ -26,7 +26,7 @@ interface ChatInputProps {
   messages: unknown[];
   mcpServers: McpServer[];
   isDarkMode: boolean;
-  onPromptChange: (value: string) => void;
+  onPromptChange: (prompt: string) => void;
   onSubmit: () => void;
   onStopGeneration: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
@@ -43,7 +43,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     onSubmit,
     onStopGeneration,
     onKeyPress,
-  }, _ref) => {
+  }, ref) => {
     const suggestions = [
       'Help me debug this code',
       'Explain how this works',
@@ -65,13 +65,13 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
       }`}>
         {/* Prompt Suggestions */}
         {messages.length === 0 && !loading && (
-          <div className="p-4 pb-2">
-            <div className="flex flex-wrap gap-2">
+          <div className="p-3 pb-2">
+            <div className="flex flex-wrap gap-1.5">
               {suggestions.map((suggestion, index) => (
                 <PromptSuggestion
                   key={`${suggestion}-${index}`}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="text-xs"
+                  className="text-xs px-2 py-1"
                   size="sm"
                 >
                   {suggestion}
@@ -81,7 +81,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           </div>
         )}
         
-        <div className="p-4">
+        <div className="p-3">
           <PromptInput
             value={prompt}
             onValueChange={onPromptChange}
@@ -95,6 +95,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
             } focus-within:ring-2 focus-within:ring-blue-500/20`}
           >
             <PromptInputTextarea
+              ref={ref}
               placeholder="Message Claude Code..."
               className={`${
                 isDarkMode
@@ -133,27 +134,27 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           </PromptInput>
           
           {/* Footer */}
-          <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center justify-between mt-2">
             <span className={`text-xs ${
               isDarkMode ? 'text-gray-400' : 'text-gray-600'
             }`}>
               Shift+Enter for new line
             </span>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs">
               {mcpServers.filter(s => s.enabled).length > 0 && (
-                <span className={`flex items-center gap-1 text-xs ${
+                <span className={`flex items-center gap-1 ${
                   isDarkMode ? 'text-green-400' : 'text-green-600'
                 }`}>
-                  <div className="w-2 h-2 rounded-full bg-current animate-pulse" />
-                  {mcpServers.filter(s => s.enabled).length} MCP server{mcpServers.filter(s => s.enabled).length > 1 ? 's' : ''} active
+                  <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                  {mcpServers.filter(s => s.enabled).length} MCP
                 </span>
               )}
               
-              <span className={`text-xs ${
+              <span className={`${
                 isDarkMode ? 'text-gray-400' : 'text-gray-600'
               }`}>
-                {messages.length} message{messages.length !== 1 ? 's' : ''}
+                {messages.length} msg{messages.length !== 1 ? 's' : ''}
               </span>
             </div>
           </div>

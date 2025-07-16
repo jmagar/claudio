@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { conversationStore, type Conversation, type ConversationMessage } from '@/lib/conversation-store';
+import { conversationStore } from '@/lib/conversation-store';
+import { type Conversation, type ConversationMessage } from '@/types';
 
 export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -115,6 +116,36 @@ export function useConversations() {
     setMessages(messagesToKeep);
   }, [messages]);
 
+  // Resume from last conversation - useful for CLI integration
+  const resumeLastConversation = useCallback(() => {
+    const stored = conversationStore.getAllConversations();
+    if (stored.length > 0) {
+      const lastConversation = stored[0]; // Most recent conversation
+      loadConversation(lastConversation);
+      return lastConversation;
+    }
+    return null;
+  }, [loadConversation]);
+
+  // Export conversation data for CLI integration
+  const exportConversation = useCallback((conversation?: Conversation) => {
+    const conv = conversation || currentConversation;
+    if (!conv) {return null;}
+    
+    return {
+      id: conv.id,
+      title: conv.title,
+      messages: conv.messages.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content,
+        timestamp: msg.timestamp.toISOString(),
+      })),
+      totalTokens: conv.totalTokens,
+      createdAt: conv.createdAt.toISOString(),
+      updatedAt: conv.updatedAt.toISOString(),
+    };
+  }, [currentConversation]);
+
   return {
     conversations,
     currentConversation,
@@ -125,5 +156,7 @@ export function useConversations() {
     deleteConversation,
     editMessage,
     restartFromMessage,
+    resumeLastConversation,
+    exportConversation,
   };
 }

@@ -11,7 +11,7 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
-import { type ConversationMessage, type Conversation } from '@/lib/conversation-store';
+import { type ConversationMessage, type Conversation } from '@/types';
 import { themeClasses } from '@/lib/theme-utils';
 import { generateMessageId } from '@/lib/id-utils';
 import { ConversationSidebar } from '@/components/chat/ConversationSidebar';
@@ -46,6 +46,8 @@ export function ClaudeMaxInterface() {
   const {
     loading,
     error,
+    retryAttempt,
+    isRetrying,
     startStreaming,
     stopStreaming,
   } = useStreaming();
@@ -137,10 +139,10 @@ export function ClaudeMaxInterface() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Header */}
-        <div className={`border-b backdrop-blur-xl ${themeClasses.headerBackground(isDarkMode)}`}>
-          <div className="flex items-center justify-between p-4">
+        <div className={`flex-shrink-0 border-b backdrop-blur-xl ${themeClasses.headerBackground(isDarkMode)}`}>
+          <div className="flex items-center justify-between p-3">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
@@ -154,11 +156,11 @@ export function ClaudeMaxInterface() {
               
               <div className={`flex items-center gap-2 ${themeClasses.textPrimary(isDarkMode)}`}>
                 <div className="relative">
-                  <Bot className="h-6 w-6" />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse" />
+                  <Bot className="h-5 w-5" />
+                  <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold">Claude Code</h1>
+                  <h1 className="text-base font-semibold">Claude Code</h1>
                   <p className={`text-xs ${themeClasses.textSecondary(isDarkMode)}`}>
                     {currentConversation?.title || 'New Conversation'}
                   </p>
@@ -166,12 +168,12 @@ export function ClaudeMaxInterface() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={toggleTheme}
-                className="rounded-xl"
+                className="rounded-xl h-8 w-8 p-0"
                 aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -181,7 +183,7 @@ export function ClaudeMaxInterface() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowSettings(!showSettings)}
-                className="rounded-xl"
+                className="rounded-xl h-8 w-8 p-0"
                 aria-label={showSettings ? 'Hide settings' : 'Show settings'}
               >
                 <Settings className="h-4 w-4" />
@@ -191,7 +193,7 @@ export function ClaudeMaxInterface() {
                 variant="ghost"
                 size="sm"
                 onClick={clearChat}
-                className="rounded-xl"
+                className="rounded-xl h-8 w-8 p-0"
                 aria-label="Start new conversation"
               >
                 <Plus className="h-4 w-4" />
@@ -200,32 +202,38 @@ export function ClaudeMaxInterface() {
           </div>
         </div>
 
-        {/* Messages */}
-        <ChatMessages
-          messages={messages}
-          loading={loading}
-          error={error}
-          editingMessageId={editingMessageId}
-          isDarkMode={isDarkMode}
-          onCopyToClipboard={copyToClipboard}
-          onEditMessage={handleEditMessage}
-          onRestartFromMessage={restartFromMessage}
-          onSetEditingMessageId={setEditingMessageId}
-        />
+        {/* Messages Container - Takes remaining space */}
+        <div className="flex-1 min-h-0">
+          <ChatMessages
+            messages={messages}
+            loading={loading}
+            error={error}
+            retryAttempt={retryAttempt}
+            isRetrying={isRetrying}
+            editingMessageId={editingMessageId}
+            isDarkMode={isDarkMode}
+            onCopyToClipboard={copyToClipboard}
+            onEditMessage={handleEditMessage}
+            onRestartFromMessage={restartFromMessage}
+            onSetEditingMessageId={setEditingMessageId}
+          />
+        </div>
 
-        {/* Input */}
-        <ChatInput
-          ref={textareaRef}
-          prompt={prompt}
-          loading={loading}
-          messages={messages}
-          mcpServers={mcpServers}
-          isDarkMode={isDarkMode}
-          onPromptChange={setPrompt}
-          onSubmit={handleSubmit}
-          onStopGeneration={stopStreaming}
-          onKeyPress={handleKeyPress}
-        />
+        {/* Input - Sticky at bottom */}
+        <div className="flex-shrink-0">
+          <ChatInput
+            ref={textareaRef}
+            prompt={prompt}
+            loading={loading}
+            messages={messages}
+            mcpServers={mcpServers}
+            isDarkMode={isDarkMode}
+            onPromptChange={setPrompt}
+            onSubmit={handleSubmit}
+            onStopGeneration={stopStreaming}
+            onKeyPress={handleKeyPress}
+          />
+        </div>
       </div>
 
       {/* Settings Panel */}

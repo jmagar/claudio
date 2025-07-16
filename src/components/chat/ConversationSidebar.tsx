@@ -47,20 +47,20 @@ export const ConversationSidebar = memo(function ConversationSidebar({
   return (
     <AnimationErrorBoundary>
       <motion.div
-        initial={{ x: -320, opacity: 0 }}
+        initial={{ x: -280, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -320, opacity: 0 }}
+        exit={{ x: -280, opacity: 0 }}
         transition={{ type: 'spring', damping: 20 }}
-        className={`w-80 flex-shrink-0 border-r backdrop-blur-xl ${
+        className={`w-64 lg:w-72 flex-shrink-0 border-r backdrop-blur-xl ${
           isDarkMode 
             ? 'bg-gray-950/95 border-gray-800/50 shadow-2xl' 
             : 'bg-white/95 border-gray-200/50 shadow-xl'
         }`}
     >
       {/* Header */}
-      <div className="p-6 border-b border-current/10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-lg font-semibold ${
+      <div className="p-4 border-b border-current/10">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className={`text-base font-semibold ${
             isDarkMode ? 'text-white' : 'text-gray-900'
           }`}>
             Conversations
@@ -68,7 +68,7 @@ export const ConversationSidebar = memo(function ConversationSidebar({
           <Button
             onClick={onNewConversation}
             size="sm"
-            className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
+            className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 h-8 w-8 p-0"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -96,21 +96,21 @@ export const ConversationSidebar = memo(function ConversationSidebar({
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">
         {filteredConversations.length === 0 ? (
-          <div className={`p-6 text-center ${
+          <div className={`p-4 text-center ${
             isDarkMode ? 'text-slate-400' : 'text-slate-600'
           }`}>
-            <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>No conversations yet</p>
-            <p className="text-sm mt-1">Start a new conversation to begin</p>
+            <History className="h-10 w-10 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No conversations yet</p>
+            <p className="text-xs mt-1">Start a new conversation to begin</p>
           </div>
         ) : (
-          <div className="p-3 space-y-2">
+          <div className="p-2 space-y-1">
             {filteredConversations.map((conversation) => (
               <motion.div
                 key={conversation.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`group relative p-4 rounded-xl cursor-pointer transition-all ${
+                className={`group relative p-3 rounded-lg cursor-pointer transition-all ${
                   currentConversation?.id === conversation.id
                     ? isDarkMode 
                       ? 'bg-blue-900/30 border-blue-700/50' 

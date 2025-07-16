@@ -1,23 +1,26 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { formatMessages, type ClaudeMessage } from '@/lib/message-utils';
-import { type ConversationMessage } from '@/lib/conversation-store';
+import { formatMessages } from '@/lib/message-utils';
 import { generateMessageId } from '@/lib/id-utils';
 import { getErrorMessage } from '@/lib/error-messages';
-
-interface StreamingState {
-  loading: boolean;
-  error: string | null;
-  isTyping: boolean;
-}
-
-interface StreamingConfig {
-  timeoutMs?: number;
-  maxRetries?: number;
-}
+import { ExponentialBackoff, isRetryableError, sleep } from '@/lib/retry-utils';
+import type { 
+  ConversationMessage, 
+  ClaudeMessage, 
+  StreamingState, 
+  StreamingConfig, 
+  RetryConfig,
+} from '@/types';
 
 const DEFAULT_CONFIG: StreamingConfig = {
   timeoutMs: 30000, // 30 seconds
-  maxRetries: 3,
+  retryConfig: {
+    maxRetries: 3,
+    initialDelayMs: 1000,
+    maxDelayMs: 10000,
+    backoffMultiplier: 2,
+    jitterFactor: 0.1,
+  },
+  preservePartialContent: true,
 };
 
 export function useStreaming() {
@@ -25,6 +28,8 @@ export function useStreaming() {
     loading: false,
     error: null,
     isTyping: false,
+    retryAttempt: 0,
+    isRetrying: false,
   });
   
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -48,174 +53,250 @@ export function useStreaming() {
       loading: false,
       error: null,
       isTyping: false,
+      retryAttempt: 0,
+      isRetrying: false,
     });
   }, []);
 
   const startStreaming = useCallback(async (
     prompt: string,
-    mcpServers: Record<string, unknown>,
-    onUpdateMessages: (updater: (prev: ConversationMessage[]) => ConversationMessage[]) => void,
+    mcpServers: Record<string, any>,
+    onUpdateMessages: (updater: (messages: ConversationMessage[]) => ConversationMessage[]) => void,
     config: StreamingConfig = DEFAULT_CONFIG,
   ) => {
-    // Abort any existing streaming operation
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    const backoff = new ExponentialBackoff(config.retryConfig);
+    let assistantMessage: ConversationMessage | null = null;
+    let preservedContent = '';
+    let finalError: Error | null = null;
 
-    // Create streaming assistant message
-    const assistantMessage: ConversationMessage = {
-      id: generateMessageId(),
-      type: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      streaming: true,
-    };
-    
-    // Ensure we don't add duplicate messages
-    onUpdateMessages(prev => {
-      // Check if there's already a streaming message from this session
-      const hasStreamingMessage = prev.some(msg => msg.streaming === true);
-      if (hasStreamingMessage) {
-        // Replace the existing streaming message instead of adding a new one
-        return prev.map(msg => msg.streaming === true ? assistantMessage : msg);
+    // Reset streaming state
+    setStreamingState(prev => ({ 
+      ...prev, 
+      loading: true, 
+      error: null, 
+      retryAttempt: 0, 
+      isRetrying: false,
+    }));
+
+    const performStreamingAttempt = async (): Promise<void> => {
+      // Abort any existing streaming operation
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-      return [...prev, assistantMessage];
-    });
-    
-    // Track accumulated messages for proper formatting
-    const accumulatedMessages: ClaudeMessage[] = [];
-    
-    setStreamingState(prev => ({ ...prev, loading: true, error: null }));
-    
-    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
-    const startTime = Date.now();
-    
-    try {
-      abortControllerRef.current = new AbortController();
-      
-      // Set up timeout
-      const timeoutId = setTimeout(() => {
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-        }
-      }, config.timeoutMs);
-      
-      const response = await fetch('/api/claude-code/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          prompt,
-          mcpServers,
-        }),
-        signal: abortControllerRef.current.signal,
-      });
-      
-      // Clear timeout if request succeeds
-      clearTimeout(timeoutId);
 
-      if (!response.body) {throw new Error('No response body');}
+      // Create or reuse assistant message
+      if (!assistantMessage) {
+        assistantMessage = {
+          id: generateMessageId(),
+          type: 'assistant',
+          content: preservedContent,
+          timestamp: new Date(),
+          streaming: true,
+        };
+        
+        // Add the message to the conversation - check for existing streaming messages first
+        onUpdateMessages(prev => {
+          // Remove any existing streaming messages to prevent duplicates
+          const filteredMessages = prev.filter(msg => !msg.streaming);
+          return [...filteredMessages, assistantMessage!];
+        });
+      } else if (config.preservePartialContent && preservedContent) {
+        // Update existing message with preserved content
+        onUpdateMessages(prev => prev.map(msg => 
+          msg.id === assistantMessage!.id 
+            ? { ...msg, content: preservedContent, streaming: true }
+            : msg,
+        ));
+      }
 
-      reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
+      const accumulatedMessages: ClaudeMessage[] = [];
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+      let timeoutId: NodeJS.Timeout | null = null;
+      const startTime = Date.now();
+      
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {break;}
+        abortControllerRef.current = new AbortController();
+        
+        // Set up timeout
+        timeoutId = setTimeout(() => {
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+          }
+        }, config.timeoutMs);
+        
+        const response = await fetch('/api/claude-code/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            prompt,
+            mcpServers,
+          }),
+          signal: abortControllerRef.current.signal,
+        });
+        
+        // Clear timeout if request succeeds
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
+        if (!response.body) {
+          throw new Error('No response body');
+        }
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') {
-                setStreamingState(prev => ({ ...prev, loading: false }));
-                return;
-              }
+        reader = response.body.getReader();
+        const decoder = new TextDecoder();
 
-              try {
-                const message = JSON.parse(data) as unknown;
-                
-                if (message && typeof message === 'object' && 'type' in message && message.type === 'error') {
-                  const errorMessage = message as { error?: string };
-                  const errorInfo = getErrorMessage(errorMessage.error || 'unknown');
-                  setStreamingState(prev => ({ ...prev, error: errorInfo.message, loading: false }));
-                  break;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              break;
+            }
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') {
+                  setStreamingState(prev => ({ ...prev, loading: false }));
+                  return;
                 }
 
-                // Add to accumulated messages and format with deduplication
-                accumulatedMessages.push(message as ClaudeMessage);
-                
-                // Use the local formatMessages function for consistent formatting without duplicates
-                const formattedContent = formatMessages(accumulatedMessages);
-                
-                // Extract token usage from result messages
-                let tokenUsage = undefined;
-                if (message && typeof message === 'object' && 'type' in message && message.type === 'result' && 'usage' in message && message.usage) {
-                  const resultMessage = message as { usage: { input_tokens?: number; output_tokens?: number; total_tokens?: number } };
-                  tokenUsage = {
-                    input: resultMessage.usage.input_tokens || 0,
-                    output: resultMessage.usage.output_tokens || 0,
-                    total: resultMessage.usage.total_tokens || (resultMessage.usage.input_tokens || 0) + (resultMessage.usage.output_tokens || 0),
-                  };
+                try {
+                  const message = JSON.parse(data) as unknown;
+                  
+                  if (message && typeof message === 'object' && 'type' in message && message.type === 'error') {
+                    const errorMessage = message as { error?: string };
+                    throw new Error(errorMessage.error || 'Stream error');
+                  }
+
+                  // Add to accumulated messages and format
+                  accumulatedMessages.push(message as ClaudeMessage);
+                  const formattedContent = formatMessages(accumulatedMessages);
+                  
+                  // Extract token usage from result messages
+                  let tokenUsage = undefined;
+                  if (message && typeof message === 'object' && 'type' in message && message.type === 'result' && 'usage' in message && message.usage) {
+                    const resultMessage = message as { usage: { input_tokens?: number; output_tokens?: number; total_tokens?: number } };
+                    tokenUsage = {
+                      input: resultMessage.usage.input_tokens || 0,
+                      output: resultMessage.usage.output_tokens || 0,
+                      total: resultMessage.usage.total_tokens || (resultMessage.usage.input_tokens || 0) + (resultMessage.usage.output_tokens || 0),
+                    };
+                  }
+                  
+                  if (formattedContent.trim()) {
+                    preservedContent = formattedContent; // Save for retry
+                    onUpdateMessages(prev => {
+                      // Make sure we only update the correct assistant message
+                      return prev.map(msg => 
+                        msg.id === assistantMessage!.id 
+                          ? { 
+                              ...msg, 
+                              content: formattedContent,
+                              streaming: message && typeof message === 'object' && 'type' in message && message.type === 'result' ? false : true,
+                              ...(tokenUsage && { tokens: tokenUsage }),
+                            }
+                          : msg,
+                      );
+                    });
+                  }
+                } catch (_e) {
+                  // Skip malformed JSON
                 }
-                
-                if (formattedContent.trim()) {
-                  onUpdateMessages(prev => prev.map(msg => 
-                    msg.id === assistantMessage.id 
-                      ? { 
-                          ...msg, 
-                          content: formattedContent,
-                          streaming: false, // Mark as no longer streaming
-                          ...(tokenUsage && { tokens: tokenUsage }),
-                        }
-                      : msg,
-                  ));
-                }
-              } catch (_e) {
-                console.error('Error parsing message:', _e);
               }
             }
           }
-        }
-      } finally {
-        // Always close the reader to prevent resource leaks
-        if (reader) {
-          try {
-            reader.releaseLock();
-          } catch {
-            // Reader might already be closed
+        } finally {
+          // Always close the reader to prevent resource leaks
+          if (reader) {
+            try {
+              reader.releaseLock();
+            } catch {
+              // Reader might already be closed
+            }
           }
         }
+      } catch (error: unknown) {
+        const streamError = error instanceof Error ? error : new Error('Stream error');
+        
+        if (streamError.name === 'AbortError') {
+          const isTimeout = Date.now() - startTime >= (config.timeoutMs || DEFAULT_CONFIG.timeoutMs!);
+          throw new Error(isTimeout ? 'Request timeout' : 'Stream aborted');
+        }
+        
+        throw streamError;
+      } finally {
+        // Cleanup
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        
+        // Clear accumulated messages to prevent memory leaks
+        accumulatedMessages.length = 0;
+        
+        if (abortControllerRef.current) {
+          if (!abortControllerRef.current.signal.aborted) {
+            abortControllerRef.current.abort();
+          }
+          abortControllerRef.current = null;
+        }
       }
-    } catch (error: unknown) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        // Check if this was a timeout or manual cancellation
-        const isTimeout = Date.now() - startTime >= (config.timeoutMs || DEFAULT_CONFIG.timeoutMs!);
-        const errorKey = isTimeout ? 'timeout' : 'stream_abort';
-        const errorInfo = getErrorMessage(errorKey);
-        setStreamingState(prev => ({ ...prev, error: errorInfo.message, loading: false }));
-      } else {
-        const errorInfo = getErrorMessage(error instanceof Error ? error : 'sdk_error');
-        setStreamingState(prev => ({ ...prev, error: errorInfo.message, loading: false }));
+    };
+
+    // Main retry loop
+    while (backoff.canRetry()) {
+      try {
+        await performStreamingAttempt();
+        // Success! Reset state and return
+        setStreamingState(prev => ({ ...prev, loading: false, isRetrying: false }));
+        return;
+      } catch (error: unknown) {
+        const streamError = error instanceof Error ? error : new Error('Unknown error');
+        finalError = streamError;
+
+        // Check if this error is retryable
+        if (!isRetryableError(streamError) || !backoff.canRetry()) {
+          break;
+        }
+
+        const delay = backoff.getNextDelay();
+        if (delay < 0) {
+          break;
+        }
+
+        // Update state to show retry attempt
+        setStreamingState(prev => ({ 
+          ...prev, 
+          isRetrying: true, 
+          retryAttempt: backoff.getCurrentAttempt().attempt,
+        }));
+
+        // Wait before retrying
+        await sleep(delay);
       }
-      // Don't remove the streaming message on error - preserve partial content
+    }
+
+    // All retries exhausted - handle final error
+    const errorInfo = getErrorMessage(finalError || 'stream_error');
+    setStreamingState(prev => ({ 
+      ...prev, 
+      error: errorInfo.message, 
+      loading: false, 
+      isRetrying: false,
+    }));
+    
+    // Mark the message as no longer streaming but preserve content if configured
+    if (assistantMessage) {
       onUpdateMessages(prev => prev.map(msg => 
-        msg.id === assistantMessage.id 
+        msg.id === assistantMessage!.id 
           ? { ...msg, streaming: false }
           : msg,
       ));
-    } finally {
-      setStreamingState(prev => ({ ...prev, loading: false }));
-      
-      // Clear accumulated messages to prevent memory leaks
-      accumulatedMessages.length = 0;
-      
-      // Clean up AbortController reference
-      if (abortControllerRef.current) {
-        abortControllerRef.current = null;
-      }
     }
   }, []);
 
