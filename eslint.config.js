@@ -43,6 +43,10 @@ export default [
       // TypeScript rules
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/strict-boolean-expressions": "error",
+      "@typescript-eslint/prefer-nullish-coalescing": "error",
+      "@typescript-eslint/prefer-optional-chain": "error",
+      "@typescript-eslint/no-floating-promises": "error",
       
       // Style rules
       "semi": ["error", "always"],

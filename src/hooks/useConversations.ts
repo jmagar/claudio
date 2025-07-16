@@ -66,7 +66,7 @@ export function useConversations() {
         return prev;
       });
     }
-  }, [messages, debouncedSave]); // Removed currentConversation dependency to prevent recursion
+  }, [messages, debouncedSave, currentConversation]); // Added currentConversation dependency
 
   // Update conversation ID ref when conversation changes
   useEffect(() => {

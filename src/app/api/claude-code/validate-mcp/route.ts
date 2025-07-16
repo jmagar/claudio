@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       responseTime: validationResult.responseTime,
     });
 
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Failed to validate MCP server' },
       { status: 500 },

@@ -32,7 +32,11 @@ export function useMcpHealth(servers: McpServer[]) {
   }, []);
 
   const getServerHealth = useCallback((server: McpServer): McpServerHealth | undefined => {
-    const serverId = `${server.name || 'unnamed'}-${server.type || 'stdio'}-${server.command || 'no-command'}`.replace(/[^a-zA-Z0-9-]/g, '-');
+    const serverId = [
+      server.name || 'unnamed',
+      server.type || 'stdio',
+      server.command || 'no-command'
+    ].map(part => part.replace(/[^a-zA-Z0-9]/g, '-')).join('-');
     return healthMap.get(serverId);
   }, [healthMap]);
 
@@ -61,15 +65,15 @@ export function useMcpHealth(servers: McpServer[]) {
   }, []);
 
   useEffect(() => {
-    if (isMonitoring) {
-      mcpHealthMonitor.stopAllMonitoring();
-      
-      servers.forEach(server => {
-        if (server.enabled) {
-          mcpHealthMonitor.startMonitoring(server);
-        }
-      });
-    }
+    if (!isMonitoring) return;
+    
+    mcpHealthMonitor.stopAllMonitoring();
+    
+    servers.forEach(server => {
+      if (server.enabled) {
+        mcpHealthMonitor.startMonitoring(server);
+      }
+    });
   }, [servers, isMonitoring]);
 
   useEffect(() => {

@@ -34,15 +34,15 @@ export class ExponentialBackoff {
   }
 
   /**
-   * Calculates the delay for the next retry attempt
+   * Calculates the delay for a specific attempt number without side effects
    */
-  getNextDelay(): number {
-    if (this.attempt >= this.config.maxRetries) {
+  private calculateDelay(attemptNumber: number): number {
+    if (attemptNumber >= this.config.maxRetries) {
       return -1; // No more retries
     }
 
     // Calculate exponential backoff delay
-    const baseDelay = this.config.initialDelayMs * Math.pow(this.config.backoffMultiplier, this.attempt);
+    const baseDelay = this.config.initialDelayMs * Math.pow(this.config.backoffMultiplier, attemptNumber);
     
     // Apply maximum delay cap
     const cappedDelay = Math.min(baseDelay, this.config.maxDelayMs);
@@ -51,8 +51,16 @@ export class ExponentialBackoff {
     const jitter = cappedDelay * this.config.jitterFactor * (Math.random() - 0.5);
     const finalDelay = Math.max(0, cappedDelay + jitter);
 
-    this.attempt++;
     return finalDelay;
+  }
+
+  /**
+   * Calculates the delay for the next retry attempt and increments the counter
+   */
+  getNextDelay(): number {
+    const delay = this.calculateDelay(this.attempt);
+    this.attempt++;
+    return delay;
   }
 
   /**
@@ -61,7 +69,7 @@ export class ExponentialBackoff {
   getCurrentAttempt(): RetryAttempt {
     return {
       attempt: this.attempt,
-      delay: this.getNextDelay(),
+      delay: this.calculateDelay(this.attempt),
       totalElapsed: Date.now() - this.startTime,
     };
   }

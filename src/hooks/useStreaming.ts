@@ -8,7 +8,6 @@ import type {
   ClaudeMessage, 
   StreamingState, 
   StreamingConfig, 
-  RetryConfig,
 } from '@/types';
 
 const DEFAULT_CONFIG: StreamingConfig = {
@@ -60,7 +59,7 @@ export function useStreaming() {
 
   const startStreaming = useCallback(async (
     prompt: string,
-    mcpServers: Record<string, any>,
+    mcpServers: Record<string, unknown>,
     onUpdateMessages: (updater: (messages: ConversationMessage[]) => ConversationMessage[]) => void,
     config: StreamingConfig = DEFAULT_CONFIG,
   ) => {
@@ -204,7 +203,7 @@ export function useStreaming() {
                       );
                     });
                   }
-                } catch (_e) {
+                } catch {
                   // Skip malformed JSON
                 }
               }

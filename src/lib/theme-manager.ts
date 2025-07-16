@@ -23,7 +23,7 @@ export interface ThemeStorage {
 export class LocalStorageThemeManager implements ThemeStorage {
   private readonly storageKey = 'claude-code-theme';
   private mediaQuery: MediaQueryList | null = null;
-  private listeners: Set<(theme: ThemeConfig) => void> = new Set();
+  private listeners: Set<(config: ThemeConfig) => void> = new Set();
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -51,7 +51,7 @@ export class LocalStorageThemeManager implements ThemeStorage {
       if (stored && ['light', 'dark', 'system'].includes(stored)) {
         return stored as Theme;
       }
-    } catch (error) {
+    } catch {
     }
     return 'system';
   }
@@ -65,7 +65,7 @@ export class LocalStorageThemeManager implements ThemeStorage {
       localStorage.setItem(this.storageKey, theme);
       const config = this.getThemeConfig();
       this.notifyListeners(config);
-    } catch (error) {
+    } catch {
     }
   }
 

@@ -26,7 +26,7 @@ interface ChatInputProps {
   messages: unknown[];
   mcpServers: McpServer[];
   isDarkMode: boolean;
-  onPromptChange: (prompt: string) => void;
+  onPromptChange: (value: string) => void;
   onSubmit: () => void;
   onStopGeneration: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
@@ -122,7 +122,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 <PromptInputAction tooltip="Send message">
                   <Button
                     onClick={onSubmit}
-                    disabled={!prompt.trim()}
+                    disabled={!prompt?.trim()}
                     size="sm"
                     className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
                   >

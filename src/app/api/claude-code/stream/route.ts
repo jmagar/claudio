@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { runClaudeCodeQuery } from '@/lib/claude-code-sdk';
-import { type McpServerConfig } from '@anthropic-ai/claude-code';
 import { claudeCodeStreamRateLimit } from '@/lib/rate-limit';
 import { validateClaudeCodeRequest, validateRequestSize } from '@/lib/input-validation';
 
@@ -8,17 +7,16 @@ import { validateClaudeCodeRequest, validateRequestSize } from '@/lib/input-vali
  * Validates that the provided object is a valid Record<string, McpServerConfig>
  * Throws an error if validation fails to prevent runtime crashes
  */
-function validateMcpServers(mcpServers: unknown): Record<string, any> {
+function validateMcpServers(mcpServers: unknown): Record<string, unknown> {
   if (!mcpServers || typeof mcpServers !== 'object') {
     return {};
   }
   
   const servers = mcpServers as Record<string, unknown>;
-  const validatedServers: Record<string, any> = {};
+  const validatedServers: Record<string, unknown> = {};
   
   for (const [name, config] of Object.entries(servers)) {
     if (!config || typeof config !== 'object') {
-      console.warn(`Skipping invalid MCP server configuration for ${name}:`, config);
       continue;
     }
     
@@ -26,11 +24,10 @@ function validateMcpServers(mcpServers: unknown): Record<string, any> {
     
     // Validate required command field
     if (!serverConfig.command || typeof serverConfig.command !== 'string') {
-      console.warn(`Skipping MCP server ${name}: invalid or missing command`);
       continue;
     }
     
-    const validatedConfig: any = {
+    const validatedConfig: Record<string, unknown> = {
       command: serverConfig.command,
     };
     
@@ -204,9 +201,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     // Log detailed error information server-side for debugging
     if (error instanceof Error) {
-      console.error('Claude Code stream setup error:', error.message, error.stack);
     } else {
-      console.error('Claude Code stream setup error:', error);
     }
     
     return new Response(

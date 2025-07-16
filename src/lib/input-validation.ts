@@ -27,64 +27,65 @@ export interface ValidationResult {
  * Validates Claude Code API request parameters
  */
 export function validateClaudeCodeRequest(
-  requestBody: any,
+  requestBody: unknown,
   config: ValidationConfig = DEFAULT_VALIDATION_CONFIG,
 ): ValidationResult {
   const errors: string[] = [];
+  const body = requestBody as Record<string, unknown>;
 
   // Validate prompt
-  if (!requestBody.prompt) {
+  if (!body.prompt) {
     errors.push('Prompt is required');
-  } else if (typeof requestBody.prompt !== 'string') {
+  } else if (typeof body.prompt !== 'string') {
     errors.push('Prompt must be a string');
-  } else if (requestBody.prompt.length > config.maxPromptLength) {
+  } else if (body.prompt.length > config.maxPromptLength) {
     errors.push(`Prompt too long. Maximum length: ${config.maxPromptLength} characters`);
-  } else if (requestBody.prompt.trim().length === 0) {
+  } else if (body.prompt.trim().length === 0) {
     errors.push('Prompt cannot be empty');
   }
 
   // Validate customSystemPrompt if provided
-  if (requestBody.customSystemPrompt !== undefined) {
-    if (typeof requestBody.customSystemPrompt !== 'string') {
+  if (body.customSystemPrompt !== undefined) {
+    if (typeof body.customSystemPrompt !== 'string') {
       errors.push('Custom system prompt must be a string');
-    } else if (requestBody.customSystemPrompt.length > config.maxCustomSystemPromptLength) {
+    } else if (body.customSystemPrompt.length > config.maxCustomSystemPromptLength) {
       errors.push(`Custom system prompt too long. Maximum length: ${config.maxCustomSystemPromptLength} characters`);
     }
   }
 
   // Validate maxTurns if provided
-  if (requestBody.maxTurns !== undefined) {
-    if (!Number.isInteger(requestBody.maxTurns)) {
+  if (body.maxTurns !== undefined) {
+    if (!Number.isInteger(body.maxTurns)) {
       errors.push('maxTurns must be an integer');
-    } else if (requestBody.maxTurns < config.minTurns || requestBody.maxTurns > config.maxTurns) {
+    } else if (body.maxTurns !== null && ((body.maxTurns as number) < config.minTurns || (body.maxTurns as number) > config.maxTurns)) {
       errors.push(`maxTurns must be between ${config.minTurns} and ${config.maxTurns}`);
     }
   }
 
   // Validate allowedTools if provided
-  if (requestBody.allowedTools !== undefined) {
-    if (!Array.isArray(requestBody.allowedTools)) {
+  if (body.allowedTools !== undefined) {
+    if (!Array.isArray(body.allowedTools)) {
       errors.push('allowedTools must be an array');
-    } else if (!requestBody.allowedTools.every((tool: any) => typeof tool === 'string')) {
+    } else if (!body.allowedTools.every((tool: unknown) => typeof tool === 'string')) {
       errors.push('All allowedTools must be strings');
     }
   }
 
   // Validate disallowedTools if provided
-  if (requestBody.disallowedTools !== undefined) {
-    if (!Array.isArray(requestBody.disallowedTools)) {
+  if (body.disallowedTools !== undefined) {
+    if (!Array.isArray(body.disallowedTools)) {
       errors.push('disallowedTools must be an array');
-    } else if (!requestBody.disallowedTools.every((tool: any) => typeof tool === 'string')) {
+    } else if (!body.disallowedTools.every((tool: unknown) => typeof tool === 'string')) {
       errors.push('All disallowedTools must be strings');
     }
   }
 
   // Validate mcpServers if provided
-  if (requestBody.mcpServers !== undefined) {
-    if (typeof requestBody.mcpServers !== 'object' || requestBody.mcpServers === null) {
+  if (body.mcpServers !== undefined) {
+    if (typeof body.mcpServers !== 'object' || body.mcpServers === null) {
       errors.push('mcpServers must be an object');
     } else {
-      const serverCount = Object.keys(requestBody.mcpServers).length;
+      const serverCount = Object.keys(body.mcpServers).length;
       if (serverCount > config.maxMcpServers) {
         errors.push(`Too many MCP servers. Maximum allowed: ${config.maxMcpServers}`);
       }

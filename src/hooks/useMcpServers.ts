@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
 import { generateServerId } from '@/lib/id-utils';
-import { type McpServerConfig } from '@anthropic-ai/claude-code';
 
 export interface McpServer {
   name: string;
@@ -15,7 +14,7 @@ export interface McpServer {
  * Validates and converts McpServer to McpServerConfig
  * Ensures type safety and prevents runtime errors from invalid configurations
  */
-function validateMcpServerConfig(server: McpServer): any {
+function validateMcpServerConfig(server: McpServer): unknown {
   // Validate required fields
   if (!server.name || typeof server.name !== 'string') {
     throw new Error(`Invalid MCP server name: ${server.name}`);
@@ -26,7 +25,7 @@ function validateMcpServerConfig(server: McpServer): any {
   }
   
   // Create base configuration
-  const config: any = {
+  const config: Record<string, unknown> = {
     command: server.command.trim(),
   };
   
@@ -78,7 +77,7 @@ export function useMcpServers() {
   }, []);
 
   const enabledServers = useMemo(() => {
-    const servers: Record<string, any> = {};
+    const servers: Record<string, unknown> = {};
     
     mcpServers
       .filter(server => server.enabled)
@@ -86,8 +85,7 @@ export function useMcpServers() {
         try {
           const validatedConfig = validateMcpServerConfig(server);
           servers[server.name] = validatedConfig;
-        } catch (error) {
-          console.error(`Invalid MCP server configuration for ${server.name}:`, error);
+        } catch {
           // Skip invalid servers rather than crashing the entire application
         }
       });
@@ -95,7 +93,7 @@ export function useMcpServers() {
     return servers;
   }, [mcpServers]);
 
-  const getEnabledServers = useCallback((): Record<string, any> => enabledServers, [enabledServers]);
+  const getEnabledServers = useCallback((): Record<string, unknown> => enabledServers, [enabledServers]);
 
   return {
     mcpServers,

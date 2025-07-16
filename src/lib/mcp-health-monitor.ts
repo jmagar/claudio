@@ -241,7 +241,7 @@ export class McpHealthMonitor {
         if (updatedHealth?.status === 'healthy') {
           return true;
         }
-      } catch (err) {
+      } catch {
         retryCount++;
         if (retryCount < this.config.maxRetries) {
           await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));

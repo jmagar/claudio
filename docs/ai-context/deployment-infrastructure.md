@@ -1,10 +1,11 @@
 # Deployment & Infrastructure Documentation
 
-This document contains deployment and infrastructure-related documentation for the project.
+This document contains deployment- and infrastructure-related documentation for the project.
 
 ## Purpose
 
 This template serves as a placeholder for documenting:
+
 - Deployment strategies and procedures
 - Infrastructure architecture and configuration
 - CI/CD pipelines and automation

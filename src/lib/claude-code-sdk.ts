@@ -6,7 +6,7 @@ export interface ClaudeCodeOptions {
   customSystemPrompt?: string;
   allowedTools?: string[];
   disallowedTools?: string[];
-  mcpServers?: Record<string, McpServerConfig>;
+  mcpServers?: Record<string, unknown>;
 }
 
 export async function* runClaudeCodeQuery({
@@ -28,13 +28,11 @@ export async function* runClaudeCodeQuery({
         customSystemPrompt,
         allowedTools,
         disallowedTools,
-        mcpServers,
+        mcpServers: mcpServers as Record<string, McpServerConfig>,
       },
     })) {
       yield message;
     }
-  } catch (error) {
-    throw error;
   } finally {
     // Always abort the controller to clean up resources
     if (!abortController.signal.aborted) {

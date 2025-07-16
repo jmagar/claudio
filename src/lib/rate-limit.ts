@@ -26,7 +26,6 @@ export function rateLimit(config: RateLimitConfig) {
       : request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     
     const now = Date.now();
-    const windowStart = now - config.windowMs;
     
     // Clean up expired entries
     for (const [entryKey, entry] of rateLimitStore.entries()) {

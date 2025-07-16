@@ -2,6 +2,7 @@
  * Claude Code SDK related types
  */
 
+
 // Claude message types from SDK
 export interface ClaudeMessage {
   type: string;
@@ -27,5 +28,5 @@ export interface ClaudeCodeOptions {
   customSystemPrompt?: string;
   allowedTools?: string[];
   disallowedTools?: string[];
-  mcpServers?: Record<string, any>;
+  mcpServers?: Record<string, unknown>;
 }

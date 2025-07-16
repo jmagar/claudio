@@ -100,9 +100,18 @@ export const ERROR_MESSAGES: Record<string, ErrorInfo> = {
 export function getErrorMessage(error: string | Error): ErrorInfo {
   const errorKey = typeof error === 'string' ? error : error.message;
   
+  // Check for direct matches first
+  if (ERROR_MESSAGES[errorKey]) {
+    return ERROR_MESSAGES[errorKey];
+  }
+  
   // Check for specific error patterns
-  if (errorKey.includes('authentication') || errorKey.includes('login')) {
+  if (errorKey.includes('authentication')) {
     return ERROR_MESSAGES.authentication;
+  }
+  
+  if (errorKey.includes('login')) {
+    return ERROR_MESSAGES.login;
   }
   
   if (errorKey.includes('timeout')) {
@@ -123,11 +132,6 @@ export function getErrorMessage(error: string | Error): ErrorInfo {
   
   if (errorKey.includes('storage') || errorKey.includes('localStorage')) {
     return ERROR_MESSAGES.storage_error;
-  }
-  
-  // Check for direct matches
-  if (ERROR_MESSAGES[errorKey]) {
-    return ERROR_MESSAGES[errorKey];
   }
   
   // Default to unknown error

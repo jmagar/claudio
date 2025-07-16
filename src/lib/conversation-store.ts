@@ -50,7 +50,7 @@ class ConversationStore {
           })),
         };
       });
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -76,7 +76,7 @@ class ConversationStore {
       // Keep only last 50 conversations
       const trimmed = conversations.slice(0, 50);
       localStorage.setItem(this.storageKey, JSON.stringify(trimmed));
-    } catch (error) {
+    } catch {
     }
   }
 
@@ -87,7 +87,7 @@ class ConversationStore {
       const conversations = this.getAllConversations();
       const filtered = conversations.filter(conv => conv.id !== id);
       localStorage.setItem(this.storageKey, JSON.stringify(filtered));
-    } catch (error) {
+    } catch {
     }
   }
 
