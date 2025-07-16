@@ -9,6 +9,11 @@ export type CodeBlockProps = {
   className?: string
 } & React.HTMLProps<HTMLDivElement>
 
+/**
+ * Renders a styled container for displaying code or related content.
+ *
+ * Applies consistent layout, border, background, and text styling, and merges any additional class names or div props.
+ */
 function CodeBlock({ children, className, ...props }: CodeBlockProps) {
   return (
     <div
@@ -31,6 +36,16 @@ export type CodeBlockCodeProps = {
   className?: string
 } & React.HTMLProps<HTMLDivElement>
 
+/**
+ * Renders a syntax-highlighted code block using the specified language and theme.
+ *
+ * If the highlighted HTML is not yet available (such as during server-side rendering), falls back to displaying the raw code in a plain code block.
+ *
+ * @param code - The source code to display and highlight
+ * @param language - The programming language for syntax highlighting (defaults to 'tsx')
+ * @param theme - The color theme for syntax highlighting (defaults to 'github-light')
+ * @returns A styled div containing the highlighted or plain code block
+ */
 function CodeBlockCode({
   code,
   language = 'tsx',
@@ -76,6 +91,11 @@ function CodeBlockCode({
 
 export type CodeBlockGroupProps = React.HTMLAttributes<HTMLDivElement>
 
+/**
+ * Renders a flex container for grouping related code blocks or elements with customizable styling.
+ *
+ * Children are displayed in a horizontal row, centered and spaced between.
+ */
 function CodeBlockGroup({
   children,
   className,

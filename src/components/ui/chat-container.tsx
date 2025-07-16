@@ -18,6 +18,11 @@ export type ChatContainerScrollAnchorProps = {
   ref?: React.RefObject<HTMLDivElement>
 } & React.HTMLAttributes<HTMLDivElement>
 
+/**
+ * Provides a scrollable container for chat content that automatically sticks to the bottom, ensuring new messages are visible.
+ *
+ * Wraps children in a flexbox layout with vertical overflow scrolling and configures stick-to-bottom behavior for chat logs. Supports additional HTML div attributes.
+ */
 function ChatContainerRoot({
   children,
   className,
@@ -36,6 +41,11 @@ function ChatContainerRoot({
   );
 }
 
+/**
+ * Provides a scrollable content area for chat messages within a chat container.
+ *
+ * Wraps its children in a flex column layout using `StickToBottom.Content`, allowing for automatic scroll management and additional HTML div attributes.
+ */
 function ChatContainerContent({
   children,
   className,
@@ -51,6 +61,11 @@ function ChatContainerContent({
   );
 }
 
+/**
+ * Renders an invisible scroll anchor element for chat containers.
+ *
+ * This anchor helps maintain scroll position at the bottom of the chat when new messages are added. It is visually minimal, does not shrink, and is hidden from assistive technologies.
+ */
 function ChatContainerScrollAnchor({
   className,
   ...props

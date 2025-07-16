@@ -22,6 +22,13 @@ import { useConversations } from '@/hooks/useConversations';
 import { useStreaming } from '@/hooks/useStreaming';
 import { useMcpServers } from '@/hooks/useMcpServers';
 
+/**
+ * Renders the main chat interface for Claude Code, providing conversation management, message streaming, theming, and server configuration.
+ *
+ * Integrates conversation selection, chat messaging, editing, streaming controls, theme toggling, and server management within a responsive layout. Users can start new conversations, edit or delete messages, manage server endpoints, and switch between dark and light modes.
+ *
+ * @returns The Claude Code chat interface React component.
+ */
 export function ClaudeMaxInterface() {
   const [prompt, setPrompt] = useState('');
   const [showSettings, setShowSettings] = useState(false);

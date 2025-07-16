@@ -43,6 +43,11 @@ export async function* runClaudeCodeQuery({
   }
 }
 
+/**
+ * Executes a Claude Code API query with the given options and returns all resulting messages as an array.
+ *
+ * @returns An array of SDKMessage objects representing the full response from the Claude Code API.
+ */
 export async function getClaudeCodeResponse(options: ClaudeCodeOptions): Promise<SDKMessage[]> {
   const messages: SDKMessage[] = [];
   

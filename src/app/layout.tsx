@@ -6,6 +6,13 @@ export const metadata: Metadata = {
   description: 'A Next.js frontend for Claude Code SDK',
 };
 
+/**
+ * Defines the root layout for the application, setting the HTML language to English and applying global body styles.
+ *
+ * Renders the provided child components within the main HTML structure.
+ *
+ * @param children - The content to be rendered inside the layout
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

@@ -24,7 +24,13 @@ export interface ValidationResult {
 }
 
 /**
- * Validates Claude Code API request parameters
+ * Validates the parameters of a Claude Code API request against configurable constraints.
+ *
+ * Checks for required fields, correct types, and value limits for properties such as `prompt`, `customSystemPrompt`, `maxTurns`, `allowedTools`, `disallowedTools`, and `mcpServers`. Accumulates all validation errors and returns a result indicating overall validity.
+ *
+ * @param requestBody - The request body to validate
+ * @param config - Optional validation configuration to override default limits
+ * @returns An object indicating whether the request is valid and any validation errors
  */
 export function validateClaudeCodeRequest(
   requestBody: any,
@@ -98,7 +104,11 @@ export function validateClaudeCodeRequest(
 }
 
 /**
- * Validates the size of the request body
+ * Checks if the request body size, as specified by the Content-Length header, exceeds the allowed maximum.
+ *
+ * @param contentLength - The Content-Length header value from the request, or null if not provided
+ * @param maxSizeBytes - The maximum allowed size in bytes (defaults to 1MB)
+ * @returns A ValidationResult indicating whether the request size is within the allowed limit and any related errors
  */
 export function validateRequestSize(
   contentLength: string | null,
@@ -120,7 +130,12 @@ export function validateRequestSize(
 }
 
 /**
- * Sanitizes string input to prevent injection attacks
+ * Removes potentially dangerous characters and protocols from a string to prevent injection attacks.
+ *
+ * Strips HTML/XML special characters (`<`, `>`, `"`, `'`, `&`), as well as occurrences of `javascript:` and `data:` protocols, and trims whitespace.
+ *
+ * @param input - The string to sanitize
+ * @returns The sanitized string
  */
 export function sanitizeString(input: string): string {
   // Remove potentially dangerous characters
@@ -132,7 +147,12 @@ export function sanitizeString(input: string): string {
 }
 
 /**
- * Validates that MCP server names are safe
+ * Checks if an MCP server name contains only allowed characters and does not exceed 50 characters.
+ *
+ * Only alphanumeric characters, hyphens, underscores, and dots are permitted.
+ *
+ * @param name - The MCP server name to validate
+ * @returns `true` if the name is valid; otherwise, `false`
  */
 export function validateMcpServerName(name: string): boolean {
   // Only allow alphanumeric characters, hyphens, underscores, and dots

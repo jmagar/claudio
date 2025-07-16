@@ -90,7 +90,12 @@ export class ExponentialBackoff {
 }
 
 /**
- * Determines if an error is retryable
+ * Determines whether an error is eligible for retry based on its message or type.
+ *
+ * Returns `true` for errors commonly associated with transient network issues, and `false` for errors related to authentication, authorization, validation, or client-side problems.
+ *
+ * @param error - The error to evaluate for retry eligibility
+ * @returns `true` if the error is considered retryable; otherwise, `false`
  */
 export function isRetryableError(error: Error): boolean {
   // Network errors that are generally retryable
@@ -138,14 +143,23 @@ export function isRetryableError(error: Error): boolean {
 }
 
 /**
- * Sleeps for the specified number of milliseconds
+ * Returns a promise that resolves after a specified delay in milliseconds.
+ *
+ * @param ms - The number of milliseconds to wait before resolving
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * Retry a function with exponential backoff
+ * Executes an asynchronous function with configurable exponential backoff retry logic.
+ *
+ * Attempts to run the provided function, retrying on retryable errors with increasing delays and optional jitter, until the operation succeeds or retry limits are reached.
+ *
+ * @param fn - The asynchronous function to execute with retries
+ * @param config - Optional partial configuration to override default retry behavior
+ * @param onRetry - Optional callback invoked on each retry attempt with attempt details and the encountered error
+ * @returns The resolved value from the successful execution of `fn`
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,

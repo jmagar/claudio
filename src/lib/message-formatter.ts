@@ -5,9 +5,12 @@
 import type { ClaudeMessage, FormattedMessage } from '@/types';
 
 /**
- * Formats Claude Code SDK messages by extracting unique text content
- * and removing duplicates that can occur in streaming responses
- * Optimized for O(n) performance with content hashing
+ * Aggregates and formats unique text content from an array of Claude Code SDK messages.
+ *
+ * Extracts and deduplicates text from 'assistant' messages and successful 'result' messages, handling both string and block array formats. Returns a single string with unique, trimmed message contents separated by double newlines.
+ *
+ * @param messages - The array of ClaudeMessage objects to process
+ * @returns A formatted string containing unique message contents
  */
 export function formatMessages(messages: ClaudeMessage[]): string {
   const seenContent = new Set<string>();
@@ -44,7 +47,12 @@ export function formatMessages(messages: ClaudeMessage[]): string {
 }
 
 /**
- * Formats a single message with detailed analysis
+ * Formats a single ClaudeMessage into a structured object with content, type, code presence, and emptiness status.
+ *
+ * Distinguishes between text, code, mixed, and JSON message types, and detects code blocks within the message content.
+ *
+ * @param message - The ClaudeMessage to format
+ * @returns A FormattedMessage object containing the trimmed content, type, code presence flag, and empty status
  */
 export function formatSingleMessage(message: ClaudeMessage): FormattedMessage {
   let content = '';
@@ -92,7 +100,10 @@ export function formatSingleMessage(message: ClaudeMessage): FormattedMessage {
 }
 
 /**
- * Deduplicates messages by content
+ * Removes duplicate and empty messages from an array, preserving only unique messages based on their type and formatted content.
+ *
+ * @param messages - The array of ClaudeMessage objects to deduplicate
+ * @returns An array of unique, non-empty ClaudeMessage objects
  */
 export function deduplicateMessages(messages: ClaudeMessage[]): ClaudeMessage[] {
   const seen = new Set<string>();
@@ -112,7 +123,12 @@ export function deduplicateMessages(messages: ClaudeMessage[]): ClaudeMessage[] 
 }
 
 /**
- * Extracts code blocks from formatted message content
+ * Parses a string to extract all fenced code blocks, returning their language, code content, and line number range.
+ *
+ * Each code block is identified by triple backticks (```) and may specify a language after the opening fence.
+ *
+ * @param content - The formatted message content to parse for code blocks
+ * @returns An array of objects, each containing the language, code string, and the start and end line numbers of the code block
  */
 export function extractCodeBlocks(content: string): Array<{
   language: string;
@@ -170,7 +186,12 @@ export function extractCodeBlocks(content: string): Array<{
 }
 
 /**
- * Estimates reading time for formatted content
+ * Estimates the reading time for the given content, adjusting for the presence of code.
+ *
+ * Splits the content into words, detects code by searching for backticks, and calculates reading time using a slower speed if code is present.
+ *
+ * @param content - The text to analyze for reading time
+ * @returns An object containing the word count, estimated reading time in minutes (minimum 1), and a flag indicating if code is present
  */
 export function estimateReadingTime(content: string): {
   words: number;

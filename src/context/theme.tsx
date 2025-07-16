@@ -19,6 +19,13 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Provides theme state and controls to descendant components via React context.
+ *
+ * Initializes and manages theme configuration, persistence, and styling utilities, exposing the current theme, system preference, effective theme, and functions to toggle or set the theme. Applies the effective theme to the document and ensures context consumers have access to theme-related state and helpers.
+ *
+ * @param children - React nodes that will have access to the theme context
+ */
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [themeManager] = useState(() => new LocalStorageThemeManager());
   const [config, setConfig] = useState<ThemeConfig>(() => themeManager.getThemeConfig());
@@ -73,6 +80,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   );
 }
 
+/**
+ * Provides access to the current theme context.
+ *
+ * Must be used within a `ThemeProvider`; otherwise, an error is thrown.
+ * Returns theme state, theme control functions, and a theme styler instance.
+ *
+ * @returns The current theme context object
+ */
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {

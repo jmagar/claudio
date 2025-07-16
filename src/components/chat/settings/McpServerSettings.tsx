@@ -22,6 +22,11 @@ interface McpServerSettingsProps {
   onRemoveMcpServer: (index: number) => void;
 }
 
+/**
+ * Displays and manages the configuration and health monitoring of Model Context Protocol (MCP) servers.
+ *
+ * Provides UI controls to add, update, and remove MCP servers, toggle health monitoring, and view real-time health status. Includes informational and security notices, and adapts styling for dark or light mode.
+ */
 export function McpServerSettings({
   isDarkMode,
   mcpServers,

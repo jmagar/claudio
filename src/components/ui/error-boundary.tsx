@@ -60,7 +60,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Hook-based error boundary for functional components
+/**
+ * Wraps a React component with an error boundary, displaying a fallback UI if an error occurs during rendering.
+ *
+ * @param Component - The component to be wrapped with error boundary protection.
+ * @param errorFallback - Optional React node to display if an error is caught.
+ * @returns A new functional component that renders the original component inside an error boundary.
+ */
 export function withErrorBoundary<T extends object>(
   Component: React.ComponentType<T>,
   errorFallback?: ReactNode,
@@ -74,7 +80,11 @@ export function withErrorBoundary<T extends object>(
   };
 }
 
-// Animation-specific error boundary
+/**
+ * Wraps child components in an error boundary that displays a custom fallback UI when an animation fails to render.
+ *
+ * Renders a pulsing gray box with an error message if an error occurs in the animation subtree.
+ */
 export function AnimationErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary

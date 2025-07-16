@@ -28,6 +28,11 @@ import type { ConversationMessage, ChatMessagesProps } from '@/types';
 import { WelcomeScreen } from './WelcomeScreen';
 import { useEffect, useState, memo, useMemo, useCallback } from 'react';
 
+/**
+ * Renders a scroll-to-bottom button that appears only when the chat log is not scrolled to the bottom.
+ *
+ * The button is only rendered on the client after mounting to avoid server-side rendering issues. When clicked, it smoothly scrolls the chat container to the bottom.
+ */
 function ClientOnlyScrollButton() {
   const [isMounted, setIsMounted] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);

@@ -23,6 +23,13 @@ const DEFAULT_CONFIG: StreamingConfig = {
   preservePartialContent: true,
 };
 
+/**
+ * React hook for managing streaming assistant messages with retry, timeout, and incremental update logic.
+ *
+ * Provides state and control functions to initiate, stop, and clean up streaming requests, handling retries with exponential backoff, timeout aborts, and real-time message updates. Intended for use in conversational UIs where assistant responses are streamed and may require robust error handling and retry mechanisms.
+ *
+ * @returns An object containing streaming state (`loading`, `error`, `isTyping`, `retryAttempt`, `isRetrying`) and control functions: `startStreaming`, `stopStreaming`, and `cleanupStreaming`.
+ */
 export function useStreaming() {
   const [streamingState, setStreamingState] = useState<StreamingState>({
     loading: false,

@@ -12,6 +12,13 @@ export type PromptSuggestionProps = {
   highlight?: string
 } & React.ButtonHTMLAttributes<HTMLButtonElement>
 
+/**
+ * Renders a button that optionally highlights a substring within its text content.
+ *
+ * If a `highlight` string is provided and the children are a string, the component visually emphasizes the first occurrence of the highlight substring within the button text. Otherwise, it renders a standard button with configurable styling.
+ *
+ * @param highlight - Optional substring to highlight within the button's text content. If not provided or empty, no highlighting occurs.
+ */
 function PromptSuggestion({
   children,
   variant,

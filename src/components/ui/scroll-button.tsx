@@ -12,6 +12,11 @@ export type ScrollButtonProps = {
   size?: VariantProps<typeof buttonVariants>['size']
 } & React.ButtonHTMLAttributes<HTMLButtonElement>
 
+/**
+ * Renders a floating button that scrolls the view to the bottom when clicked.
+ *
+ * The button is only visible and interactive when the view is not already at the bottom. It displays a downward chevron icon and supports customization via `variant`, `size`, and additional CSS classes.
+ */
 function ScrollButton({
   className,
   variant = 'outline',

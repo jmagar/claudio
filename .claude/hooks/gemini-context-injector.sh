@@ -21,7 +21,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 # Read input from stdin
 INPUT_JSON=$(cat)
 
-# Function to log injection events
+# log_injection_event logs an event with a timestamp, event type, and details to the log file in JSON format.
 log_injection_event() {
     local event_type="$1"
     local details="$2"
@@ -29,7 +29,7 @@ log_injection_event() {
     echo "{\"timestamp\": \"$timestamp\", \"event\": \"$event_type\", \"details\": \"$details\"}" >> "$LOG_FILE"
 }
 
-# Main logic
+# main processes Gemini consultation session requests, injecting project context files into new sessions by modifying the input JSON to include required attachments if they are not already present. For existing sessions or if no files are available, it continues without modification.
 main() {
     # Extract tool information from stdin
     local tool_name=$(echo "$INPUT_JSON" | jq -r '.tool_name // ""')

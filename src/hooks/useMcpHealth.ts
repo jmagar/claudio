@@ -4,6 +4,14 @@ import { useEffect, useState, useCallback } from 'react';
 import { mcpHealthMonitor, type McpServerHealth } from '@/lib/mcp-health-monitor';
 import type { McpServer } from '@/types';
 
+/**
+ * React hook for monitoring and managing the health status of multiple MCP servers.
+ *
+ * Provides state and functions to start and stop monitoring, recover individual servers, retrieve health information for a specific server, and summarize overall health statuses.
+ *
+ * @param servers - Array of MCP server configurations to be monitored
+ * @returns An object containing the current health map, monitoring state, and utility functions for server health management
+ */
 export function useMcpHealth(servers: McpServer[]) {
   const [healthMap, setHealthMap] = useState<Map<string, McpServerHealth>>(new Map());
   const [isMonitoring, setIsMonitoring] = useState(false);
