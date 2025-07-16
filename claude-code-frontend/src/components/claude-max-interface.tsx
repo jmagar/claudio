@@ -33,7 +33,6 @@ export function ClaudeMaxInterface() {
   const [showSettings, setShowSettings] = useState(false);
   const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
@@ -72,7 +71,7 @@ export function ClaudeMaxInterface() {
       setCurrentConversation(updated);
       setConversations(conversationStore.getAllConversations());
     }
-  }, [messages, currentConversation]);
+  }, [messages, currentConversation?.id]);
 
   // Local function to format Claude messages without duplicates
   const formatMessages = (messages: any[]): string => {
@@ -349,11 +348,7 @@ export function ClaudeMaxInterface() {
   };
 
   return (
-    <div className={`h-screen flex transition-all duration-300 ${
-      isDarkMode 
-        ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' 
-        : 'bg-gradient-to-br from-white via-slate-50 to-white'
-    }`}>
+    <div className="h-screen flex transition-all duration-300">
       
       {/* Use the extracted ConversationSidebar component */}
       <ConversationSidebar
