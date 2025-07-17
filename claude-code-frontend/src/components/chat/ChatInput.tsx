@@ -1,10 +1,11 @@
 'use client';
 
-import { forwardRef, useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, X, Zap, Activity } from 'lucide-react';
+import { Send, X, Zap, Activity, Command } from 'lucide-react';
+import { getCommandSuggestions, loadCustomCommands, type SlashCommand } from '@/lib/slash-commands';
 
 interface McpServer {
   name: string;
@@ -25,26 +26,81 @@ interface ChatInputProps {
   onSubmit: () => void;
   onStopGeneration: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
-export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
-  ({
-    prompt,
-    loading,
-    messages,
-    mcpServers,
-    isDarkMode,
-    onPromptChange,
-    onSubmit,
-    onStopGeneration,
-    onKeyPress
-  }, ref) => {
+export function ChatInput({
+  prompt,
+  loading,
+  messages,
+  mcpServers,
+  isDarkMode,
+  onPromptChange,
+  onSubmit,
+  onStopGeneration,
+  onKeyPress,
+  textareaRef
+}: ChatInputProps) {
     const [isFocused, setIsFocused] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
+    const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+    const suggestionsRef = useRef<HTMLDivElement>(null);
+    
+    // Load custom commands on mount
+    useEffect(() => {
+      loadCustomCommands();
+    }, []);
     
     const handleInputChange = (value: string) => {
       onPromptChange(value);
       setIsTyping(value.length > 0);
+      
+      // Handle slash command suggestions
+      if (value.startsWith('/')) {
+        const commandSuggestions = getCommandSuggestions(value);
+        setSuggestions(commandSuggestions);
+        setShowSuggestions(commandSuggestions.length > 0);
+        setSelectedSuggestion(0);
+      } else {
+        setShowSuggestions(false);
+        setSuggestions([]);
+      }
+    };
+
+    const handleSuggestionSelect = (command: SlashCommand) => {
+      onPromptChange(`/${command.name}`);
+      setShowSuggestions(false);
+      setSuggestions([]);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (showSuggestions && suggestions.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedSuggestion(prev => 
+            prev < suggestions.length - 1 ? prev + 1 : 0
+          );
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedSuggestion(prev => 
+            prev > 0 ? prev - 1 : suggestions.length - 1
+          );
+        } else if (e.key === 'Tab' || e.key === 'Enter') {
+          if (suggestions[selectedSuggestion]) {
+            e.preventDefault();
+            handleSuggestionSelect(suggestions[selectedSuggestion]);
+            return;
+          }
+        } else if (e.key === 'Escape') {
+          setShowSuggestions(false);
+          setSuggestions([]);
+        }
+      }
+      
+      // Call the original onKeyPress handler
+      onKeyPress(e);
     };
 
     return (
@@ -87,12 +143,13 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
             
             <motion.div className="relative">
               <Textarea
-                ref={ref}
+                ref={textareaRef}
+                data-slot="chat-input"
                 value={prompt}
                 onChange={(e) => handleInputChange(e.target.value)}
-                onKeyDown={onKeyPress}
+                onKeyDown={handleKeyDown}
                 onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 placeholder="Message Claude Code..."
                 className={`relative min-h-[70px] max-h-[200px] pr-16 pl-6 py-4 rounded-2xl border-2 transition-all duration-300 resize-none text-base ${
                   isDarkMode
@@ -103,6 +160,66 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 } focus:ring-2 focus:ring-blue-500/20 focus:outline-none backdrop-blur-sm`}
                 disabled={loading}
               />
+              
+              {/* Slash command suggestions */}
+              <AnimatePresence>
+                {showSuggestions && suggestions.length > 0 && (
+                  <motion.div
+                    ref={suggestionsRef}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className={`absolute bottom-full left-0 right-0 mb-2 rounded-xl border backdrop-blur-sm shadow-lg z-50 max-h-64 overflow-y-auto ${
+                      isDarkMode
+                        ? 'bg-slate-800/95 border-slate-700/50'
+                        : 'bg-white/95 border-slate-200/50'
+                    }`}
+                  >
+                    <div className="p-2">
+                      <div className={`flex items-center gap-2 px-3 py-2 text-xs font-medium ${
+                        isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                      }`}>
+                        <Command className="w-3 h-3" />
+                        Slash Commands
+                      </div>
+                      
+                      {suggestions.map((command, index) => (
+                        <motion.button
+                          key={command.name}
+                          onClick={() => handleSuggestionSelect(command)}
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-150 ${
+                            index === selectedSuggestion
+                              ? isDarkMode
+                                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                : 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : isDarkMode
+                                ? 'text-slate-300 hover:bg-slate-700/50'
+                                : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <code className={`text-sm font-mono px-2 py-1 rounded ${
+                              index === selectedSuggestion
+                                ? isDarkMode
+                                  ? 'bg-blue-500/30 text-blue-200'
+                                  : 'bg-blue-100 text-blue-800'
+                                : isDarkMode
+                                  ? 'bg-slate-700 text-slate-300'
+                                  : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              /{command.name}
+                            </code>
+                            <span className="flex-1 text-sm">{command.description}</span>
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               
               {/* Typing indicator */}
               <AnimatePresence>
@@ -266,7 +383,4 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
         </div>
       </motion.footer>
     );
-  }
-);
-
-ChatInput.displayName = 'ChatInput';
+}

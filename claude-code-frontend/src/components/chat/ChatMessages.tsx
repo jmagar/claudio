@@ -15,10 +15,7 @@ import {
   Hash,
   Check,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { EnhancedMessage } from '@/lib/message-parser';
 import { ConversationMessage } from '@/types/chat';
 import { useState } from 'react';
 
@@ -61,7 +58,15 @@ export function ChatMessages({
       transition={{ duration: 0.3 }}
     >
       <AnimatePresence>
-        {messages.map((message, index) => (
+        {messages
+          .filter(message => {
+            // Hide assistant messages with empty content during streaming
+            if (message.type === 'assistant' && message.streaming && !message.content.trim()) {
+              return false;
+            }
+            return true;
+          })
+          .map((message, index) => (
           <motion.div
             key={message.id}
             layout
@@ -192,53 +197,11 @@ export function ChatMessages({
                   ) : (
                     <div className="space-y-3">
                       {message.type === 'assistant' ? (
-                        <div className={`prose prose-base max-w-none transition-all ${
-                          isDarkMode 
-                            ? 'prose-invert prose-slate prose-headings:text-slate-100 prose-p:text-slate-200 prose-strong:text-slate-100'
-                            : 'prose-slate prose-headings:text-slate-800 prose-p:text-slate-700'
-                        }`}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              code(props: any) {
-                                const {inline, className, children, ...rest} = props;
-                                const match = /language-(\w+)/.exec(className || '');
-                                return !inline && match ? (
-                                  <motion.div
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.3 }}
-                                  >
-                                    <SyntaxHighlighter
-                                      style={isDarkMode ? oneDark : oneLight}
-                                      language={match[1]}
-                                      PreTag="div"
-                                      className="rounded-xl !my-3 shadow-lg"
-                                      {...rest}
-                                    >
-                                      {String(children).replace(/\n$/, '')}
-                                    </SyntaxHighlighter>
-                                  </motion.div>
-                                ) : (
-                                  <code className={`${className} px-2 py-1 rounded-md ${isDarkMode ? 'bg-slate-700/50' : 'bg-slate-100'}`} {...rest}>
-                                    {children}
-                                  </code>
-                                );
-                              },
-                              p: ({ children }) => (
-                                <motion.p
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.3 }}
-                                  className="leading-relaxed"
-                                >
-                                  {children}
-                                </motion.p>
-                              )
-                            }}
-                          >
-                            {message.content}
-                          </ReactMarkdown>
+                        <div className="transition-all">
+                          <EnhancedMessage 
+                            content={message.content} 
+                            isDarkMode={isDarkMode} 
+                          />
                         </div>
                       ) : (
                         <motion.p 
