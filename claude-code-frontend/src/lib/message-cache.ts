@@ -27,7 +27,10 @@ class MessageCache {
         })
       });
     } catch (error) {
-      console.warn('Failed to cache conversation:', error);
+      console.error('Failed to cache conversation:', {
+        conversationId,
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
@@ -40,6 +43,12 @@ class MessageCache {
     try {
       const key = `conv:${conversationId}`;
       const response = await fetch(`/api/cache?action=get&key=${encodeURIComponent(key)}`);
+      
+      if (!response.ok) {
+        console.error(`Cache API error: ${response.status} ${response.statusText}`);
+        return null;
+      }
+      
       const { cached } = await response.json();
       
       if (!cached) return null;
@@ -133,6 +142,12 @@ class MessageCache {
     try {
       const key = 'conversations:list';
       const response = await fetch(`/api/cache?action=get&key=${encodeURIComponent(key)}`);
+      
+      if (!response.ok) {
+        console.error(`Cache list API error: ${response.status} ${response.statusText}`);
+        return null;
+      }
+      
       const { cached } = await response.json();
       
       if (!cached) return null;

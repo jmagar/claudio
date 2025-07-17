@@ -41,20 +41,8 @@ class ConversationStore {
     try {
       const cachedList = await messageCache.getConversationList();
       if (cachedList) {
-        // For list view, we only need metadata, so get full conversations from localStorage
-        const stored = localStorage.getItem(this.storageKey);
-        if (stored) {
-          const conversations = JSON.parse(stored);
-          return conversations.map((conv: any) => ({
-            ...conv,
-            createdAt: new Date(conv.createdAt),
-            updatedAt: new Date(conv.updatedAt),
-            messages: conv.messages.map((msg: any) => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp)
-            }))
-          }));
-        }
+        // Return cached metadata directly - already has proper Date objects
+        return cachedList;
       }
     } catch (error) {
       // Cache failed, continue to localStorage
@@ -70,7 +58,7 @@ class ConversationStore {
         ...conv,
         createdAt: new Date(conv.createdAt),
         updatedAt: new Date(conv.updatedAt),
-        messages: conv.messages.map((msg: any) => ({
+        messages: (conv.messages || []).map((msg: any) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }))

@@ -16,6 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { EnhancedMessage } from '@/lib/message-parser';
+import { MessageErrorBoundary } from '@/components/ui/error-boundary';
 import { ConversationMessage } from '@/types/chat';
 import { useState } from 'react';
 
@@ -198,10 +199,12 @@ export function ChatMessages({
                     <div className="space-y-3">
                       {message.type === 'assistant' ? (
                         <div className="transition-all">
-                          <EnhancedMessage 
-                            content={message.content} 
-                            isDarkMode={isDarkMode} 
-                          />
+                          <MessageErrorBoundary>
+                            <EnhancedMessage 
+                              content={message.content} 
+                              isDarkMode={isDarkMode} 
+                            />
+                          </MessageErrorBoundary>
                         </div>
                       ) : (
                         <motion.p 

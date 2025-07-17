@@ -3,7 +3,7 @@
  * Converts raw JSON tool data into beautiful visual components
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -83,10 +83,32 @@ const TOOL_COLORS = {
   exit_plan_mode: 'from-pink-500 to-rose-500'
 } as const;
 
+// Memoized parsing cache for performance optimization
+const parseCache = new Map<string, ParsedMessage>();
+const MAX_CACHE_SIZE = 100;
+
 /**
- * Parse raw message content to extract tool usage and text
+ * Clear old cache entries when size limit is reached
+ */
+function cleanupCache() {
+  if (parseCache.size > MAX_CACHE_SIZE) {
+    const keys = Array.from(parseCache.keys());
+    const keysToDelete = keys.slice(0, keys.length - MAX_CACHE_SIZE + 20); // Keep some buffer
+    keysToDelete.forEach(key => parseCache.delete(key));
+  }
+}
+
+/**
+ * Parse raw message content to extract tool usage and text (memoized)
  */
 export function parseMessage(content: string): ParsedMessage {
+  // Check cache first
+  const cacheKey = content.length < 10000 ? content : content.substring(0, 5000) + content.slice(-1000);
+  const cached = parseCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const toolUses: ToolUse[] = [];
   const toolResults: ToolResult[] = [];
   let text = content;
@@ -162,11 +184,17 @@ export function parseMessage(content: string): ParsedMessage {
     console.warn('Error parsing message:', error);
   }
 
-  return {
+  const result: ParsedMessage = {
     text: text || undefined,
     toolUses,
     toolResults
   };
+
+  // Cache the result
+  parseCache.set(cacheKey, result);
+  cleanupCache();
+
+  return result;
 }
 
 /**
@@ -319,8 +347,8 @@ export function ToolBadge({ tool, result, isDarkMode }: ToolBadgeProps) {
             }`}>
               Parameters
             </h5>
-            {getDetailedInfo().map(({ label, value }, index) => (
-              <div key={index} className="flex justify-between items-start gap-2">
+            {getDetailedInfo().map(({ label, value }) => (
+              <div key={`${label}-${value.substring(0, 10)}`} className="flex justify-between items-start gap-2">
                 <span className={`text-xs font-medium ${
                   isDarkMode ? 'text-slate-400' : 'text-slate-600'
                 }`}>
@@ -376,7 +404,49 @@ interface EnhancedMessageProps {
 }
 
 export function EnhancedMessage({ content, isDarkMode }: EnhancedMessageProps) {
-  const parsed = parseMessage(content);
+  // Memoize the parsing result to avoid re-parsing on every render
+  const parsed = useMemo(() => parseMessage(content), [content]);
+  
+  // Memoize the markdown components to prevent recreation on every render
+  const markdownComponents = useMemo(() => ({
+    code(props: any) {
+      const {inline, className, children, ...rest} = props;
+      const match = /language-(\w+)/.exec(className || '');
+      return !inline && match ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <SyntaxHighlighter
+            style={isDarkMode ? oneDark : oneLight}
+            language={match[1]}
+            PreTag="div"
+            className="rounded-xl !my-3 shadow-lg"
+            {...rest}
+          >
+            {String(children).replace(/\n$/, '')}
+          </SyntaxHighlighter>
+        </motion.div>
+      ) : (
+        <code className={`${className} px-2 py-1 rounded-md text-sm font-mono ${
+          isDarkMode ? 'bg-slate-700/50 text-slate-200' : 'bg-slate-100 text-slate-800'
+        }`} {...rest}>
+          {children}
+        </code>
+      );
+    },
+    p: ({ children }: any) => (
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="leading-relaxed"
+      >
+        {children}
+      </motion.p>
+    )
+  }), [isDarkMode]);
   
   // If no tools were used, render as regular markdown
   if (parsed.toolUses.length === 0 && parsed.toolResults.length === 0) {
@@ -388,45 +458,7 @@ export function EnhancedMessage({ content, isDarkMode }: EnhancedMessageProps) {
       }`}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          components={{
-            code(props: any) {
-              const {inline, className, children, ...rest} = props;
-              const match = /language-(\w+)/.exec(className || '');
-              return !inline && match ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <SyntaxHighlighter
-                    style={isDarkMode ? oneDark : oneLight}
-                    language={match[1]}
-                    PreTag="div"
-                    className="rounded-xl !my-3 shadow-lg"
-                    {...rest}
-                  >
-                    {String(children).replace(/\n$/, '')}
-                  </SyntaxHighlighter>
-                </motion.div>
-              ) : (
-                <code className={`${className} px-2 py-1 rounded-md text-sm font-mono ${
-                  isDarkMode ? 'bg-slate-700/50 text-slate-200' : 'bg-slate-100 text-slate-800'
-                }`} {...rest}>
-                  {children}
-                </code>
-              );
-            },
-            p: ({ children }) => (
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="leading-relaxed"
-              >
-                {children}
-              </motion.p>
-            )
-          }}
+          components={markdownComponents}
         >
           {content}
         </ReactMarkdown>
@@ -491,45 +523,7 @@ export function EnhancedMessage({ content, isDarkMode }: EnhancedMessageProps) {
         >
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
-            components={{
-              code(props: any) {
-                const {inline, className, children, ...rest} = props;
-                const match = /language-(\w+)/.exec(className || '');
-                return !inline && match ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <SyntaxHighlighter
-                      style={isDarkMode ? oneDark : oneLight}
-                      language={match[1]}
-                      PreTag="div"
-                      className="rounded-xl !my-3 shadow-lg"
-                      {...rest}
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  </motion.div>
-                ) : (
-                  <code className={`${className} px-2 py-1 rounded-md text-sm font-mono ${
-                    isDarkMode ? 'bg-slate-700/50 text-slate-200' : 'bg-slate-100 text-slate-800'
-                  }`} {...rest}>
-                    {children}
-                  </code>
-                );
-              },
-              p: ({ children }) => (
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="leading-relaxed"
-                >
-                  {children}
-                </motion.p>
-              )
-            }}
+            components={markdownComponents}
           >
             {parsed.text}
           </ReactMarkdown>

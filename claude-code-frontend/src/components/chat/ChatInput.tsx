@@ -170,7 +170,7 @@ export function ChatInput({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className={`absolute bottom-full left-0 right-0 mb-2 rounded-xl border backdrop-blur-sm shadow-lg z-50 max-h-64 overflow-y-auto ${
+                    className={`absolute top-full left-0 right-0 mt-2 rounded-xl border backdrop-blur-sm shadow-lg z-50 max-h-64 overflow-y-auto ${
                       isDarkMode
                         ? 'bg-slate-800/95 border-slate-700/50'
                         : 'bg-white/95 border-slate-200/50'

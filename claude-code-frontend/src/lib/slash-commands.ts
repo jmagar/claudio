@@ -261,23 +261,101 @@ Please proceed with executing this command according to the instructions above.`
 
 // Store for dynamically loaded commands
 let customCommands: Record<string, SlashCommand> = {};
+let commandsCache: { data: Record<string, SlashCommand>; timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_KEY = 'claude-slash-commands-cache';
 
 /**
- * Load custom commands from .claude/commands directory
+ * Load custom commands from cache or .claude/commands directory
  */
 export async function loadCustomCommands(): Promise<void> {
   try {
-    // Try to fetch the commands directory listing
+    // Check in-memory cache first
+    if (commandsCache && Date.now() - commandsCache.timestamp < CACHE_DURATION) {
+      customCommands = commandsCache.data;
+      BUILTIN_COMMANDS.help = generateHelpCommand();
+      return;
+    }
+
+    // Check localStorage cache
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsedCache = JSON.parse(cached);
+          if (Date.now() - parsedCache.timestamp < CACHE_DURATION) {
+            customCommands = parsedCache.data;
+            commandsCache = parsedCache;
+            BUILTIN_COMMANDS.help = generateHelpCommand();
+            return;
+          }
+        }
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+
+    // Fetch fresh data from API
     const response = await fetch('/api/claude-commands');
     if (response.ok) {
       const commands = await response.json();
       customCommands = commands;
+      
+      // Update both caches
+      const cacheData = {
+        data: commands,
+        timestamp: Date.now()
+      };
+      
+      commandsCache = cacheData;
+      
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        } catch (e) {
+          // Ignore localStorage errors (quota exceeded, etc.)
+        }
+      }
+      
       // Refresh help command to include new custom commands
       BUILTIN_COMMANDS.help = generateHelpCommand();
     }
   } catch (error) {
     console.warn('Could not load custom commands:', error);
   }
+}
+
+/**
+ * Clear custom commands cache and reload
+ */
+export function clearCustomCommands(): void {
+  customCommands = {};
+  commandsCache = null;
+  
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }
+  
+  BUILTIN_COMMANDS.help = generateHelpCommand();
+}
+
+/**
+ * Force refresh commands by clearing cache and reloading
+ */
+export async function refreshCustomCommands(): Promise<void> {
+  clearCustomCommands();
+  await loadCustomCommands();
+}
+
+/**
+ * Get current custom commands (for debugging)
+ */
+export function getCustomCommands(): Record<string, SlashCommand> {
+  return { ...customCommands };
 }
 
 /**
