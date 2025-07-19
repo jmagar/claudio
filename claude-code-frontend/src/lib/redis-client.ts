@@ -4,6 +4,9 @@ import { Redis as UpstashRedis } from '@upstash/redis';
 
 let redisClient: Redis | UpstashRedis | null = null;
 let isLocal = false;
+let connectionAttempts = 0;
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1000;
 
 function validateRedisConfig(): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
@@ -33,7 +36,7 @@ function validateRedisConfig(): { isValid: boolean; errors: string[] } {
   }
 
   if (process.env.REDIS_PORT) {
-    const port = parseInt(process.env.REDIS_PORT, 10);
+    const port = Number.parseInt(process.env.REDIS_PORT, 10);
     if (isNaN(port) || port < 1 || port > 65535) {
       errors.push('REDIS_PORT must be a valid port number (1-65535)');
     }
@@ -76,39 +79,135 @@ function validateRedisConfig(): { isValid: boolean; errors: string[] } {
   };
 }
 
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function validateConnection(client: Redis | UpstashRedis): Promise<boolean> {
+  try {
+    if (client instanceof Redis) {
+      await client.ping();
+    } else {
+      await client.ping();
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function initializeRedisWithRetry(): Promise<{ client: Redis | UpstashRedis | null; isLocal: boolean }> {
+  // Validate configuration before attempting connection
+  const validation = validateRedisConfig();
+  if (!validation.isValid) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Redis configuration validation failed:', validation.errors);
+    }
+    return { client: null, isLocal: false };
+  }
+
+  for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+    try {
+      let client: Redis | UpstashRedis;
+      let localConnection = false;
+
+      // Try local Redis first
+      if (process.env.REDIS_URL || process.env.REDIS_HOST || !process.env.UPSTASH_REDIS_REST_URL) {
+        const redisUrl = process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`;
+        client = new Redis(redisUrl, {
+          maxRetriesPerRequest: 1,
+          retryDelayOnFailover: 100,
+          connectTimeout: 5000,
+          lazyConnect: true
+        });
+        localConnection = true;
+        
+        // Test the connection
+        await client.connect();
+        const isValid = await validateConnection(client);
+        if (!isValid) {
+          await client.disconnect();
+          throw new Error('Connection validation failed');
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Connected to local Redis at: ${redisUrl} (attempt ${attempt})`);
+        }
+      }
+      // Fallback to Upstash if configured
+      else if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+        client = new UpstashRedis({
+          url: process.env.UPSTASH_REDIS_REST_URL,
+          token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        });
+        localConnection = false;
+
+        // Test the connection
+        const isValid = await validateConnection(client);
+        if (!isValid) {
+          throw new Error('Connection validation failed');
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Connected to Upstash Redis (attempt ${attempt})`);
+        }
+      } else {
+        throw new Error('No Redis configuration available');
+      }
+
+      connectionAttempts = 0; // Reset on successful connection
+      return { client, isLocal: localConnection };
+
+    } catch (error) {
+      connectionAttempts = attempt;
+      
+      if (attempt === MAX_RETRY_ATTEMPTS) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`Failed to initialize Redis after ${MAX_RETRY_ATTEMPTS} attempts:`, error);
+        }
+        break;
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Redis connection attempt ${attempt} failed, retrying in ${RETRY_DELAY_MS}ms:`, error);
+      }
+      
+      await sleep(RETRY_DELAY_MS * attempt); // Exponential backoff
+    }
+  }
+
+  return { client: null, isLocal: false };
+}
+
 export function getRedisClient(): { client: Redis | UpstashRedis | null; isLocal: boolean } {
   if (typeof window !== 'undefined') {
     throw new Error('Redis client can only be used server-side');
   }
 
-  if (!redisClient) {
-    // Validate configuration before attempting connection
-    const validation = validateRedisConfig();
-    if (!validation.isValid) {
-      console.warn('Redis configuration validation failed:', validation.errors);
-      return { client: null, isLocal: false };
-    }
+  if (!redisClient && connectionAttempts < MAX_RETRY_ATTEMPTS) {
+    // For synchronous calls, we can't await, so we initialize in background
+    // This is a limitation but prevents blocking the main thread
+    initializeRedisWithRetry().then(result => {
+      redisClient = result.client;
+      isLocal = result.isLocal;
+    }).catch(() => {
+      // Silent catch since we already handle errors in initializeRedisWithRetry
+    });
+  }
 
-    try {
-      // Try local Redis first
-      if (process.env.REDIS_URL || process.env.REDIS_HOST || !process.env.UPSTASH_REDIS_REST_URL) {
-        const redisUrl = process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`;
-        redisClient = new Redis(redisUrl);
-        isLocal = true;
-        console.log('Connected to local Redis at:', redisUrl);
-      }
-      // Fallback to Upstash if configured
-      else if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-        redisClient = new UpstashRedis({
-          url: process.env.UPSTASH_REDIS_REST_URL,
-          token: process.env.UPSTASH_REDIS_REST_TOKEN,
-        });
-        isLocal = false;
-        console.log('Connected to Upstash Redis');
-      }
-    } catch (error) {
-      console.warn('Failed to initialize Redis:', error);
-    }
+  return { client: redisClient, isLocal };
+}
+
+// Export async version for explicit initialization
+export async function initializeRedis(): Promise<{ client: Redis | UpstashRedis | null; isLocal: boolean }> {
+  if (typeof window !== 'undefined') {
+    throw new Error('Redis client can only be used server-side');
+  }
+
+  if (!redisClient) {
+    const result = await initializeRedisWithRetry();
+    redisClient = result.client;
+    isLocal = result.isLocal;
   }
 
   return { client: redisClient, isLocal };

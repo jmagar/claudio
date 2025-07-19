@@ -1,4 +1,4 @@
-import type { Conversation } from './conversation-store';
+import type { Conversation, ConversationMessage } from './conversation-store';
 
 class MessageCache {
   private isEnabled = true;
@@ -64,7 +64,7 @@ class MessageCache {
         ...conversation,
         createdAt: new Date(conversation.createdAt),
         updatedAt: new Date(conversation.updatedAt),
-        messages: conversation.messages.map((msg: any) => ({
+        messages: conversation.messages.map((msg: ConversationMessage) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }))
@@ -136,7 +136,7 @@ class MessageCache {
   /**
    * Get cached conversation list
    */
-  async getConversationList(): Promise<any[] | null> {
+  async getConversationList(): Promise<Conversation[] | null> {
     if (!this.isEnabled) return null;
 
     try {
@@ -155,7 +155,7 @@ class MessageCache {
       const data = JSON.parse(cached);
       
       // Convert date strings back to Date objects
-      return data.conversations.map((conv: any) => ({
+      return data.conversations.map((conv: Conversation) => ({
         ...conv,
         createdAt: new Date(conv.createdAt),
         updatedAt: new Date(conv.updatedAt)
@@ -186,10 +186,17 @@ class MessageCache {
   }
 
   /**
-   * Check if Redis cache is available
+   * Check if Redis cache is available and responding
    */
-  isAvailable(): boolean {
-    return this.isEnabled;
+  async isAvailable(): Promise<boolean> {
+    if (!this.isEnabled) return false;
+    
+    try {
+      const response = await fetch('/api/cache?action=ping');
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 
   /**

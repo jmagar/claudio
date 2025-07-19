@@ -6,20 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, X, Zap, Activity, Command } from 'lucide-react';
 import { getCommandSuggestions, loadCustomCommands, type SlashCommand } from '@/lib/slash-commands';
-
-interface McpServer {
-  name: string;
-  command: string;
-  args?: string[];
-  type?: 'stdio' | 'sse' | 'http';
-  url?: string;
-  enabled: boolean;
-}
+import type { ConversationMessage, McpServer } from '@/types/chat';
 
 interface ChatInputProps {
   prompt: string;
   loading: boolean;
-  messages: any[];
+  messages: ConversationMessage[];
   mcpServers: McpServer[];
   isDarkMode: boolean;
   onPromptChange: (value: string) => void;
@@ -46,6 +38,7 @@ export function ChatInput({
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
     const [selectedSuggestion, setSelectedSuggestion] = useState(0);
+    const [isMouseOverSuggestions, setIsMouseOverSuggestions] = useState(false);
     const suggestionsRef = useRef<HTMLDivElement>(null);
     
     // Load custom commands on mount
@@ -87,7 +80,7 @@ export function ChatInput({
           setSelectedSuggestion(prev => 
             prev > 0 ? prev - 1 : suggestions.length - 1
           );
-        } else if (e.key === 'Tab' || e.key === 'Enter') {
+        } else if (e.key === 'Enter') {
           if (suggestions[selectedSuggestion]) {
             e.preventDefault();
             handleSuggestionSelect(suggestions[selectedSuggestion]);
@@ -149,7 +142,12 @@ export function ChatInput({
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onFocus={() => setIsFocused(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onBlur={() => {
+                  // Only hide suggestions if mouse is not over suggestions
+                  if (!isMouseOverSuggestions) {
+                    setShowSuggestions(false);
+                  }
+                }}
                 placeholder="Message Claude Code..."
                 className={`relative min-h-[70px] max-h-[200px] pr-16 pl-6 py-4 rounded-2xl border-2 transition-all duration-300 resize-none text-base ${
                   isDarkMode
@@ -170,6 +168,8 @@ export function ChatInput({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
+                    onMouseEnter={() => setIsMouseOverSuggestions(true)}
+                    onMouseLeave={() => setIsMouseOverSuggestions(false)}
                     className={`absolute top-full left-0 right-0 mt-2 rounded-xl border backdrop-blur-sm shadow-lg z-50 max-h-64 overflow-y-auto ${
                       isDarkMode
                         ? 'bg-slate-800/95 border-slate-700/50'
@@ -237,7 +237,7 @@ export function ChatInput({
                       }}
                       transition={{ 
                         duration: 1.5,
-                        repeat: Infinity,
+                        repeat: Number.POSITIVE_INFINITY,
                         ease: "easeInOut"
                       }}
                       className={`w-2 h-2 rounded-full ${
@@ -306,7 +306,7 @@ export function ChatInput({
                         }}
                         transition={{
                           duration: 2,
-                          repeat: prompt.trim() ? Infinity : 0,
+                          repeat: prompt.trim() ? Number.POSITIVE_INFINITY : 0,
                           ease: "easeInOut"
                         }}
                       >
@@ -356,7 +356,7 @@ export function ChatInput({
                       }}
                       transition={{ 
                         duration: 2,
-                        repeat: Infinity,
+                        repeat: Number.POSITIVE_INFINITY,
                         ease: "easeInOut"
                       }}
                       className="w-2 h-2 rounded-full bg-current"

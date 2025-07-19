@@ -42,13 +42,14 @@ export async function POST(request: NextRequest) {
           // Send done signal
           controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
           controller.close();
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error('Streaming error:', error);
           
+          const errorMessageText = error instanceof Error ? error.message : 'Failed to process request';
           const errorMessage = {
             type: 'error',
-            error: error.message || 'Failed to process request',
-            authRequired: error.message?.includes('authentication') || error.message?.includes('login')
+            error: errorMessageText,
+            authRequired: errorMessageText.includes('authentication') || errorMessageText.includes('login')
           };
           
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`));
@@ -64,12 +65,14 @@ export async function POST(request: NextRequest) {
         'Connection': 'keep-alive',
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Stream setup error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to setup stream';
+    const errorStack = error instanceof Error ? error.stack : undefined;
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to setup stream',
-        details: error.stack
+        error: errorMessage,
+        details: errorStack
       }),
       { 
         status: 500,

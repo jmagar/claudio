@@ -10,26 +10,23 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { 
-  Wrench, 
-  Search, 
-  FileText, 
-  FolderOpen, 
-  Terminal, 
-  Code, 
-  Edit,
-  Globe,
   CheckCircle,
   AlertCircle,
-  Play,
-  Database,
-  Sparkles
+  Wrench
 } from 'lucide-react';
+import { 
+  TOOL_ICONS, 
+  TOOL_COLORS, 
+  DEFAULT_TOOL_ICON, 
+  DEFAULT_TOOL_COLOR, 
+  getToolDescription 
+} from './tool-config';
 
 export interface ToolUse {
   type: 'tool_use';
   id: string;
   name: string;
-  input: Record<string, any>;
+  input: Record<string, unknown>;
 }
 
 export interface ToolResult {
@@ -45,43 +42,6 @@ export interface ParsedMessage {
   toolResults: ToolResult[];
 }
 
-// Icon mapping for different tools
-const TOOL_ICONS = {
-  Task: Sparkles,
-  Bash: Terminal,
-  Glob: Search,
-  Grep: Search,
-  LS: FolderOpen,
-  Read: FileText,
-  Edit: Edit,
-  MultiEdit: Edit,
-  Write: Code,
-  NotebookRead: Database,
-  NotebookEdit: Database,
-  WebFetch: Globe,
-  TodoWrite: CheckCircle,
-  WebSearch: Globe,
-  exit_plan_mode: Play
-} as const;
-
-// Color schemes for different tool types
-const TOOL_COLORS = {
-  Task: 'from-purple-500 to-pink-500',
-  Bash: 'from-green-500 to-teal-500', 
-  Glob: 'from-blue-500 to-indigo-500',
-  Grep: 'from-blue-500 to-indigo-500',
-  LS: 'from-orange-500 to-amber-500',
-  Read: 'from-cyan-500 to-blue-500',
-  Edit: 'from-yellow-500 to-orange-500',
-  MultiEdit: 'from-yellow-500 to-orange-500',
-  Write: 'from-emerald-500 to-green-500',
-  NotebookRead: 'from-violet-500 to-purple-500',
-  NotebookEdit: 'from-violet-500 to-purple-500',
-  WebFetch: 'from-indigo-500 to-blue-500',
-  TodoWrite: 'from-green-500 to-emerald-500',
-  WebSearch: 'from-blue-500 to-purple-500',
-  exit_plan_mode: 'from-pink-500 to-rose-500'
-} as const;
 
 // Memoized parsing cache for performance optimization
 const parseCache = new Map<string, ParsedMessage>();
@@ -114,37 +74,50 @@ export function parseMessage(content: string): ParsedMessage {
   let text = content;
 
   try {
-    // More comprehensive JSON pattern to match the actual format from Claude Code
-    const jsonPattern = /\{\s*"type":\s*"tool_use"[^}]*\}\}/g;
-    const matches = content.match(jsonPattern) || [];
+    // Split content into lines and attempt to parse JSON objects directly
+    const lines = content.split('\n');
     
-    for (const match of matches) {
-      try {
-        const parsed = JSON.parse(match) as ToolUse;
-        if (parsed.type === 'tool_use') {
-          toolUses.push(parsed);
-          // Remove the JSON from the text
-          text = text.replace(match, '').trim();
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(trimmedLine);
+          
+          if (parsed.type === 'tool_use') {
+            toolUses.push(parsed as ToolUse);
+            // Remove the JSON from the text
+            text = text.replace(trimmedLine, '').trim();
+          } else if (parsed.type === 'tool_result') {
+            toolResults.push(parsed as ToolResult);
+            text = text.replace(trimmedLine, '').trim();
+          }
+        } catch {
+          // Line is not valid JSON, continue
+          continue;
         }
-      } catch (e) {
-        // Try to extract individual tool use objects if they're malformed
-        console.warn('Failed to parse tool use:', e);
       }
     }
-
-    // Alternative pattern for tool results that might be in different format
-    const resultPattern = /\{\s*"type":\s*"tool_result"[^}]*\}\}/g;
-    const resultMatches = content.match(resultPattern) || [];
     
-    for (const match of resultMatches) {
-      try {
-        const parsed = JSON.parse(match) as ToolResult;
-        if (parsed.type === 'tool_result') {
-          toolResults.push(parsed);
-          text = text.replace(match, '').trim();
+    // If no JSON objects found in individual lines, try parsing multi-line JSON blocks
+    if (toolUses.length === 0 && toolResults.length === 0) {
+      // Look for JSON blocks in the content using a more conservative approach
+      const jsonBlockPattern = /\{[^}]*"type":\s*"(tool_use|tool_result)"[^}]*\}/g;
+      const matches = content.match(jsonBlockPattern) || [];
+      
+      for (const match of matches) {
+        try {
+          const parsed = JSON.parse(match);
+          
+          if (parsed.type === 'tool_use') {
+            toolUses.push(parsed as ToolUse);
+            text = text.replace(match, '').trim();
+          } else if (parsed.type === 'tool_result') {
+            toolResults.push(parsed as ToolResult);
+            text = text.replace(match, '').trim();
+          }
+        } catch {
+          // Failed to parse JSON block, skip
         }
-      } catch (e) {
-        console.warn('Failed to parse tool result:', e);
       }
     }
 
@@ -174,8 +147,8 @@ export function parseMessage(content: string): ParsedMessage {
 
           toolUses.push(syntheticTool);
           text = text.replace(match[0], '').trim();
-        } catch (e) {
-          console.warn('Failed to create synthetic tool:', e);
+        } catch {
+          // Failed to create synthetic tool, skip
         }
       }
     }
@@ -207,37 +180,10 @@ interface ToolBadgeProps {
 }
 
 export function ToolBadge({ tool, result, isDarkMode }: ToolBadgeProps) {
-  const IconComponent = TOOL_ICONS[tool.name as keyof typeof TOOL_ICONS] || Wrench;
-  const colorScheme = TOOL_COLORS[tool.name as keyof typeof TOOL_COLORS] || 'from-gray-500 to-gray-600';
+  const IconComponent = TOOL_ICONS[tool.name as keyof typeof TOOL_ICONS] || DEFAULT_TOOL_ICON;
+  const colorScheme = TOOL_COLORS[tool.name as keyof typeof TOOL_COLORS] || DEFAULT_TOOL_COLOR;
   
-  const getToolDescription = () => {
-    switch (tool.name) {
-      case 'Task':
-        return tool.input.description || 'Execute task';
-      case 'Bash':
-        return tool.input.description || `Run: ${tool.input.command?.substring(0, 30)}...`;
-      case 'Glob':
-        return `Find files: ${tool.input.pattern}`;
-      case 'Grep':
-        return `Search: "${tool.input.pattern}"`;
-      case 'LS':
-        return `List: ${tool.input.path || 'current directory'}`;
-      case 'Read':
-        return `Read: ${tool.input.file_path?.split('/').pop() || 'file'}`;
-      case 'Edit':
-        return `Edit: ${tool.input.file_path?.split('/').pop() || 'file'}`;
-      case 'Write':
-        return `Write: ${tool.input.file_path?.split('/').pop() || 'file'}`;
-      case 'WebFetch':
-        return `Fetch: ${new URL(tool.input.url).hostname}`;
-      case 'WebSearch':
-        return `Search: "${tool.input.query}"`;
-      case 'TodoWrite':
-        return `Update todos (${tool.input.todos?.length || 0} items)`;
-      default:
-        return tool.name;
-    }
-  };
+  const toolDescription = getToolDescription(tool.name, tool.input);
 
   const getDetailedInfo = () => {
     const details: Array<{ label: string; value: string }> = [];
@@ -298,7 +244,7 @@ export function ToolBadge({ tool, result, isDarkMode }: ToolBadgeProps) {
             {!isComplete && (
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                 className="w-2 h-2 rounded-full bg-blue-500"
               />
             )}
@@ -307,7 +253,7 @@ export function ToolBadge({ tool, result, isDarkMode }: ToolBadgeProps) {
           <span className={`text-xs truncate max-w-[200px] ${
             isDarkMode ? 'text-slate-400' : 'text-slate-600'
           }`}>
-            {getToolDescription()}
+            {toolDescription}
           </span>
         </div>
       </div>
@@ -335,7 +281,7 @@ export function ToolBadge({ tool, result, isDarkMode }: ToolBadgeProps) {
             <p className={`text-sm ${
               isDarkMode ? 'text-slate-400' : 'text-slate-600'
             }`}>
-              {getToolDescription()}
+              {toolDescription}
             </p>
           </div>
         </div>
@@ -409,7 +355,7 @@ export function EnhancedMessage({ content, isDarkMode }: EnhancedMessageProps) {
   
   // Memoize the markdown components to prevent recreation on every render
   const markdownComponents = useMemo(() => ({
-    code(props: any) {
+    code(props: { children?: React.ReactNode; className?: string; inline?: boolean }) {
       const {inline, className, children, ...rest} = props;
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
@@ -436,7 +382,7 @@ export function EnhancedMessage({ content, isDarkMode }: EnhancedMessageProps) {
         </code>
       );
     },
-    p: ({ children }: any) => (
+    p: ({ children }: { children?: React.ReactNode }) => (
       <motion.p
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

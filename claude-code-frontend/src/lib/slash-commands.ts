@@ -312,7 +312,7 @@ export async function loadCustomCommands(): Promise<void> {
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-        } catch (e) {
+        } catch {
           // Ignore localStorage errors (quota exceeded, etc.)
         }
       }
@@ -335,7 +335,7 @@ export function clearCustomCommands(): void {
   if (typeof window !== 'undefined') {
     try {
       localStorage.removeItem(CACHE_KEY);
-    } catch (e) {
+    } catch {
       // Ignore localStorage errors
     }
   }

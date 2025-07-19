@@ -61,8 +61,8 @@ export function ChatMessages({
       <AnimatePresence>
         {messages
           .filter(message => {
-            // Hide assistant messages with empty content during streaming
-            if (message.type === 'assistant' && message.streaming && !message.content.trim()) {
+            // Hide assistant messages with temporary empty content during streaming
+            if (message.type === 'assistant' && message.streaming && !message.content.trim() && !message.finalized) {
               return false;
             }
             return true;
@@ -103,7 +103,7 @@ export function ChatMessages({
                       }}
                       transition={{ 
                         duration: 4,
-                        repeat: Infinity,
+                        repeat: Number.POSITIVE_INFINITY,
                         ease: "easeInOut"
                       }}
                     >
@@ -141,7 +141,7 @@ export function ChatMessages({
                     }}
                     transition={{
                       duration: 3,
-                      repeat: Infinity,
+                      repeat: Number.POSITIVE_INFINITY,
                       ease: "easeInOut"
                     }}
                   />
@@ -359,7 +359,7 @@ export function ChatMessages({
                       }}
                       transition={{ 
                         duration: 3,
-                        repeat: Infinity,
+                        repeat: Number.POSITIVE_INFINITY,
                         ease: "easeInOut"
                       }}
                     >
@@ -386,8 +386,8 @@ export function ChatMessages({
               rotate: [0, 360]
             }}
             transition={{ 
-              scale: { duration: 2, repeat: Infinity },
-              rotate: { duration: 4, repeat: Infinity, ease: "linear" }
+              scale: { duration: 2, repeat: Number.POSITIVE_INFINITY },
+              rotate: { duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "linear" }
             }}
           >
             <Avatar className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg">
@@ -412,14 +412,14 @@ export function ChatMessages({
             }}
             transition={{ 
               duration: 2,
-              repeat: Infinity,
+              repeat: Number.POSITIVE_INFINITY,
               ease: "easeInOut"
             }}
           >
             <div className="flex items-center gap-3">
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
               >
                 <Loader2 className="h-5 w-5 text-blue-500" />
               </motion.div>
@@ -429,7 +429,7 @@ export function ChatMessages({
                     isDarkMode ? 'text-slate-200' : 'text-slate-700'
                   }`}
                   animate={{ opacity: [0.7, 1, 0.7] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
                 >
                   Claude is thinking
                 </motion.span>
@@ -451,7 +451,7 @@ export function ChatMessages({
                       }}
                       transition={{ 
                         duration: 1,
-                        repeat: Infinity,
+                        repeat: Number.POSITIVE_INFINITY,
                         delay: i * 0.2
                       }}
                     />
@@ -485,7 +485,7 @@ export function ChatMessages({
               }}
               transition={{ 
                 duration: 2,
-                repeat: Infinity,
+                repeat: Number.POSITIVE_INFINITY,
                 ease: "easeInOut"
               }}
             >

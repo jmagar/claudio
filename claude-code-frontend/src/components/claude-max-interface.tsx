@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Settings, 
@@ -11,20 +11,13 @@ import {
   Moon
 } from 'lucide-react';
 import { conversationStore, type Conversation, type ConversationMessage } from '@/lib/conversation-store';
+import type { McpServer } from '@/types/chat';
+import type { McpServerConfig } from '@anthropic-ai/claude-code';
 import { processSlashCommand } from '@/lib/slash-commands';
 import { ConversationSidebar } from '@/components/chat/ConversationSidebar';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { SettingsPanel } from '@/components/chat/SettingsPanel';
-
-interface McpServer {
-  name: string;
-  command: string;
-  args?: string[];
-  type?: 'stdio' | 'sse' | 'http';
-  url?: string;
-  enabled: boolean;
-}
 
 export function ClaudeMaxInterface() {
   const [prompt, setPrompt] = useState('');
@@ -41,6 +34,21 @@ export function ClaudeMaxInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  }, []);
+
+  const loadConversation = useCallback((conversation: Conversation) => {
+    if (loading) stopGeneration();
+    setCurrentConversation(conversation);
+    conversationStore.setCurrentConversationId(conversation.id);
+    setMessages(conversation.messages);
+    setError(null);
+    setEditingMessageId(null);
+  }, [loading, stopGeneration]);
 
   // Load conversations on component mount
   useEffect(() => {
@@ -69,7 +77,7 @@ export function ClaudeMaxInterface() {
     };
     
     loadInitialData();
-  }, []);
+  }, [loadConversation]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -92,10 +100,19 @@ export function ClaudeMaxInterface() {
       setCurrentConversation(updated);
       conversationStore.getAllConversations().then(setConversations).catch(console.error);
     }
-  }, [messages, currentConversation?.id]);
+  }, [messages, currentConversation]);
 
   // Local function to format Claude messages without duplicates
-  const formatMessages = (messages: any[]): string => {
+  interface StreamMessage {
+    type: string;
+    message?: {
+      content: string | Array<{ type: string; text?: string }>;
+    };
+    subtype?: string;
+    result?: string;
+  }
+  
+  const formatMessages = (messages: StreamMessage[]): string => {
     const uniqueContent: string[] = [];
     
     for (const message of messages) {
@@ -128,33 +145,12 @@ export function ClaudeMaxInterface() {
   const startNewConversation = () => {
     if (loading) stopGeneration();
     
-    const newConv = conversationStore.createNewConversation(
-      mcpServers
-        .filter(server => server.enabled)
-        .reduce((acc, server) => {
-          acc[server.name] = {
-            command: server.command,
-            args: server.args,
-            type: server.type || 'stdio',
-            url: server.url
-          };
-          return acc;
-        }, {} as Record<string, any>)
-    );
+    const newConv = conversationStore.createNewConversation();
     
     setCurrentConversation(newConv);
     conversationStore.setCurrentConversationId(newConv.id);
     setMessages([]);
     setError(null);
-  };
-
-  const loadConversation = (conversation: Conversation) => {
-    if (loading) stopGeneration();
-    setCurrentConversation(conversation);
-    conversationStore.setCurrentConversationId(conversation.id);
-    setMessages(conversation.messages);
-    setError(null);
-    setEditingMessageId(null);
   };
 
   const deleteConversation = async (conversationId: string) => {
@@ -281,7 +277,7 @@ export function ClaudeMaxInterface() {
     setMessages(prev => [...prev, assistantMessage]);
     
     // Track accumulated messages for proper formatting
-    const accumulatedMessages: any[] = [];
+    const accumulatedMessages: StreamMessage[] = [];
     
     try {
       abortControllerRef.current = new AbortController();
@@ -289,14 +285,20 @@ export function ClaudeMaxInterface() {
       const enabledMcpServers = mcpServers
         .filter(server => server.enabled)
         .reduce((acc, server) => {
-          acc[server.name] = {
-            command: server.command,
-            args: server.args,
-            type: server.type || 'stdio',
-            url: server.url
-          };
+          if (server.type === 'sse' || server.type === 'http') {
+            acc[server.name] = {
+              type: server.type,
+              url: server.url!
+            };
+          } else {
+            acc[server.name] = {
+              type: 'stdio',
+              command: server.command,
+              args: server.args
+            };
+          }
           return acc;
-        }, {} as Record<string, any>);
+        }, {} as Record<string, McpServerConfig>);
 
       const response = await fetch('/api/claude-code/stream', {
         method: 'POST',
@@ -369,8 +371,8 @@ export function ClaudeMaxInterface() {
           }
         }
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         setError('Request was cancelled');
       } else {
         setError('Failed to connect to Claude Code SDK');
@@ -380,12 +382,6 @@ export function ClaudeMaxInterface() {
     } finally {
       setLoading(false);
       abortControllerRef.current = null;
-    }
-  };
-
-  const stopGeneration = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
     }
   };
 

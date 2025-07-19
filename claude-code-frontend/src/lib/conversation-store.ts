@@ -1,6 +1,7 @@
 'use client';
 
 import { messageCache } from './message-cache';
+import type { McpServer } from '@/types/chat';
 
 export interface ConversationMessage {
   id: string;
@@ -23,7 +24,7 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
   totalTokens: number;
-  mcpServers?: Record<string, any>;
+  mcpServers?: Record<string, McpServer>;
 }
 
 class ConversationStore {
@@ -54,11 +55,11 @@ class ConversationStore {
       if (!stored) return [];
       
       const conversations = JSON.parse(stored);
-      const result = conversations.map((conv: any) => ({
+      const result = conversations.map((conv: Conversation) => ({
         ...conv,
         createdAt: new Date(conv.createdAt),
         updatedAt: new Date(conv.updatedAt),
-        messages: (conv.messages || []).map((msg: any) => ({
+        messages: (conv.messages || []).map((msg: ConversationMessage) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }))
@@ -178,7 +179,7 @@ class ConversationStore {
     }
   }
 
-  createNewConversation(mcpServers?: Record<string, any>): Conversation {
+  createNewConversation(mcpServers?: Record<string, McpServer>): Conversation {
     return {
       id: Date.now().toString(),
       title: 'New Conversation',

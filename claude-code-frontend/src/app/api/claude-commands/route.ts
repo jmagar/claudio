@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // Rate limiting store (in-memory for simplicity)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -119,7 +119,6 @@ function parseCommandFile(content: string, filename: string): SlashCommand {
     // Look for Instructions section
     else if (line.match(/^##?\s*Instructions?\s*$/i)) {
       inInstructions = true;
-      continue;
     }
     
     // Collect instructions content
@@ -128,7 +127,7 @@ function parseCommandFile(content: string, filename: string): SlashCommand {
         // Hit another section, stop collecting instructions
         break;
       }
-      instructions += line + '\n';
+      instructions += `${line}\n`;
     }
   }
   
@@ -149,7 +148,7 @@ function parseCommandFile(content: string, filename: string): SlashCommand {
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting check
-    const clientId = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+    const clientId = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     if (isRateLimited(clientId)) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
@@ -167,7 +166,7 @@ export async function GET(request: NextRequest) {
     // Try both project root and global .claude/commands directories
     const possiblePaths = [
       path.join(process.cwd(), '.claude', 'commands'),
-      path.join(process.env.HOME || '~', '.claude', 'commands')
+      path.join(process.env.HOME || process.env.USERPROFILE || '', '.claude', 'commands')
     ];
     
     for (const commandsDir of possiblePaths) {
@@ -195,9 +194,11 @@ export async function GET(request: NextRequest) {
             
             const command = parseCommandFile(content, file);
             
-            // Use filename (without extension) as the command key
-            const commandKey = file.replace('.md', '').toLowerCase();
-            commands[commandKey] = command;
+            if (command) {
+              // Use filename (without extension) as the command key
+              const commandKey = file.replace('.md', '').toLowerCase();
+              commands[commandKey] = command;
+            }
             
           } catch (fileError) {
             console.warn(`Error reading command file ${file}:`, fileError);
@@ -206,7 +207,6 @@ export async function GET(request: NextRequest) {
         
       } catch {
         // Directory doesn't exist or can't be read, continue to next path
-        continue;
       }
     }
     

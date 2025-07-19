@@ -1,4 +1,4 @@
-import { query, type SDKMessage } from "@anthropic-ai/claude-code";
+import { query, type SDKMessage, type McpServerConfig } from "@anthropic-ai/claude-code";
 
 export interface ClaudeCodeOptions {
   prompt: string;
@@ -6,7 +6,7 @@ export interface ClaudeCodeOptions {
   customSystemPrompt?: string;
   allowedTools?: string[];
   disallowedTools?: string[];
-  mcpServers?: Record<string, any>;
+  mcpServers?: Record<string, McpServerConfig>;
 }
 
 export async function* runClaudeCodeQuery({

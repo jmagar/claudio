@@ -96,11 +96,11 @@ export function SettingsPanel({
               <div className="p-2 rounded-lg bg-yellow-500/20">
                 <Palette className="h-4 w-4 text-yellow-600" />
               </div>
-              <label className={`text-sm font-semibold ${
+              <h3 className={`text-sm font-semibold ${
                 isDarkMode ? 'text-white' : 'text-slate-900'
               }`}>
                 Appearance
-              </label>
+              </h3>
             </div>
             
             <div className={`flex items-center justify-between p-4 rounded-xl transition-all ${
@@ -141,11 +141,11 @@ export function SettingsPanel({
                 <div className="p-2 rounded-lg bg-green-500/20">
                   <Server className="h-4 w-4 text-green-600" />
                 </div>
-                <label className={`text-sm font-semibold ${
+                <h3 className={`text-sm font-semibold ${
                   isDarkMode ? 'text-white' : 'text-slate-900'
                 }`}>
                   MCP Servers
-                </label>
+                </h3>
               </div>
               
               <Button
