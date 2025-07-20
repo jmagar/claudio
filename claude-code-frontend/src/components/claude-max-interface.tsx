@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Settings, 
@@ -11,19 +11,13 @@ import {
   Moon
 } from 'lucide-react';
 import { conversationStore, type Conversation, type ConversationMessage } from '@/lib/conversation-store';
+import type { McpServer } from '@/types/chat';
+import type { McpServerConfig } from '@anthropic-ai/claude-code';
+import { processSlashCommand } from '@/lib/slash-commands';
 import { ConversationSidebar } from '@/components/chat/ConversationSidebar';
 import { ChatMessages } from '@/components/chat/ChatMessages';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { SettingsPanel } from '@/components/chat/SettingsPanel';
-
-interface McpServer {
-  name: string;
-  command: string;
-  args?: string[];
-  type?: 'stdio' | 'sse' | 'http';
-  url?: string;
-  enabled: boolean;
-}
 
 export function ClaudeMaxInterface() {
   const [prompt, setPrompt] = useState('');
@@ -33,7 +27,6 @@ export function ClaudeMaxInterface() {
   const [showSettings, setShowSettings] = useState(false);
   const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
@@ -42,14 +35,49 @@ export function ClaudeMaxInterface() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load conversations on component mount
-  useEffect(() => {
-    const stored = conversationStore.getAllConversations();
-    setConversations(stored);
-    if (stored.length > 0) {
-      loadConversation(stored[0]);
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   }, []);
+
+  const loadConversation = useCallback((conversation: Conversation) => {
+    if (loading) stopGeneration();
+    setCurrentConversation(conversation);
+    conversationStore.setCurrentConversationId(conversation.id);
+    setMessages(conversation.messages);
+    setError(null);
+    setEditingMessageId(null);
+  }, [loading, stopGeneration]);
+
+  // Load conversations on component mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const stored = await conversationStore.getAllConversations();
+        setConversations(stored);
+        
+        // Restore current conversation from localStorage
+        const currentId = conversationStore.getCurrentConversationId();
+        if (currentId) {
+          const currentConv = stored.find(conv => conv.id === currentId);
+          if (currentConv) {
+            loadConversation(currentConv);
+            return;
+          }
+        }
+        
+        // Fallback to first conversation if current ID not found
+        if (stored.length > 0) {
+          loadConversation(stored[0]);
+        }
+      } catch (error) {
+        console.error('Failed to load conversations:', error);
+      }
+    };
+    
+    loadInitialData();
+  }, [loadConversation]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -68,14 +96,23 @@ export function ClaudeMaxInterface() {
           ? conversationStore.generateTitle(messages)
           : currentConversation.title
       };
-      conversationStore.saveConversation(updated);
+      conversationStore.saveConversation(updated).catch(console.error);
       setCurrentConversation(updated);
-      setConversations(conversationStore.getAllConversations());
+      conversationStore.getAllConversations().then(setConversations).catch(console.error);
     }
   }, [messages, currentConversation]);
 
   // Local function to format Claude messages without duplicates
-  const formatMessages = (messages: any[]): string => {
+  interface StreamMessage {
+    type: string;
+    message?: {
+      content: string | Array<{ type: string; text?: string }>;
+    };
+    subtype?: string;
+    result?: string;
+  }
+  
+  const formatMessages = (messages: StreamMessage[]): string => {
     const uniqueContent: string[] = [];
     
     for (const message of messages) {
@@ -108,44 +145,30 @@ export function ClaudeMaxInterface() {
   const startNewConversation = () => {
     if (loading) stopGeneration();
     
-    const newConv = conversationStore.createNewConversation(
-      mcpServers
-        .filter(server => server.enabled)
-        .reduce((acc, server) => {
-          acc[server.name] = {
-            command: server.command,
-            args: server.args,
-            type: server.type || 'stdio',
-            url: server.url
-          };
-          return acc;
-        }, {} as Record<string, any>)
-    );
+    const newConv = conversationStore.createNewConversation();
     
     setCurrentConversation(newConv);
+    conversationStore.setCurrentConversationId(newConv.id);
     setMessages([]);
     setError(null);
   };
 
-  const loadConversation = (conversation: Conversation) => {
-    if (loading) stopGeneration();
-    setCurrentConversation(conversation);
-    setMessages(conversation.messages);
-    setError(null);
-    setEditingMessageId(null);
-  };
-
-  const deleteConversation = (conversationId: string) => {
-    conversationStore.deleteConversation(conversationId);
-    const remaining = conversationStore.getAllConversations();
-    setConversations(remaining);
-    
-    if (currentConversation?.id === conversationId) {
-      if (remaining.length > 0) {
-        loadConversation(remaining[0]);
-      } else {
-        startNewConversation();
+  const deleteConversation = async (conversationId: string) => {
+    try {
+      await conversationStore.deleteConversation(conversationId);
+      const remaining = await conversationStore.getAllConversations();
+      setConversations(remaining);
+      
+      if (currentConversation?.id === conversationId) {
+        if (remaining.length > 0) {
+          loadConversation(remaining[0]);
+        } else {
+          conversationStore.setCurrentConversationId(null);
+          startNewConversation();
+        }
       }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
     }
   };
 
@@ -173,6 +196,29 @@ export function ClaudeMaxInterface() {
   const handleSubmit = async () => {
     if (!prompt.trim() || loading) return;
     
+    // Process slash commands
+    const slashResult = processSlashCommand(prompt);
+    
+    if (slashResult.isSlashCommand && slashResult.error) {
+      // Show error for invalid slash command
+      const errorMessage: ConversationMessage = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: slashResult.error,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, {
+        id: (Date.now() - 1).toString(),
+        type: 'user',
+        content: prompt,
+        timestamp: new Date()
+      }, errorMessage]);
+      
+      setPrompt('');
+      return;
+    }
+    
     // Create new conversation if none exists
     if (!currentConversation) {
       startNewConversation();
@@ -188,7 +234,35 @@ export function ClaudeMaxInterface() {
     setMessages(prev => [...prev, userMessage]);
     setLoading(true);
     setError(null);
-    const currentPrompt = prompt;
+    
+    // Handle special slash commands that need immediate action
+    if (slashResult.isSlashCommand && slashResult.command) {
+      if (slashResult.command.name === 'clear') {
+        // Clear conversation immediately
+        setMessages([]);
+        setPrompt('');
+        
+        // Show confirmation message
+        const confirmMessage: ConversationMessage = {
+          id: Date.now().toString(),
+          type: 'assistant',
+          content: 'Conversation cleared. Starting fresh!',
+          timestamp: new Date()
+        };
+        
+        setTimeout(() => {
+          setMessages([confirmMessage]);
+        }, 100);
+        
+        return;
+      }
+    }
+    
+    // Use processed prompt for slash commands, original prompt for regular messages
+    const currentPrompt = slashResult.isSlashCommand && slashResult.processedPrompt 
+      ? slashResult.processedPrompt 
+      : prompt;
+    
     setPrompt('');
     
     // Create streaming assistant message
@@ -203,7 +277,7 @@ export function ClaudeMaxInterface() {
     setMessages(prev => [...prev, assistantMessage]);
     
     // Track accumulated messages for proper formatting
-    const accumulatedMessages: any[] = [];
+    const accumulatedMessages: StreamMessage[] = [];
     
     try {
       abortControllerRef.current = new AbortController();
@@ -211,14 +285,20 @@ export function ClaudeMaxInterface() {
       const enabledMcpServers = mcpServers
         .filter(server => server.enabled)
         .reduce((acc, server) => {
-          acc[server.name] = {
-            command: server.command,
-            args: server.args,
-            type: server.type || 'stdio',
-            url: server.url
-          };
+          if (server.type === 'sse' || server.type === 'http') {
+            acc[server.name] = {
+              type: server.type,
+              url: server.url!
+            };
+          } else {
+            acc[server.name] = {
+              type: 'stdio',
+              command: server.command,
+              args: server.args
+            };
+          }
           return acc;
-        }, {} as Record<string, any>);
+        }, {} as Record<string, McpServerConfig>);
 
       const response = await fetch('/api/claude-code/stream', {
         method: 'POST',
@@ -291,8 +371,8 @@ export function ClaudeMaxInterface() {
           }
         }
       }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
         setError('Request was cancelled');
       } else {
         setError('Failed to connect to Claude Code SDK');
@@ -302,12 +382,6 @@ export function ClaudeMaxInterface() {
     } finally {
       setLoading(false);
       abortControllerRef.current = null;
-    }
-  };
-
-  const stopGeneration = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
     }
   };
 
@@ -349,11 +423,7 @@ export function ClaudeMaxInterface() {
   };
 
   return (
-    <div className={`h-screen flex transition-all duration-300 ${
-      isDarkMode 
-        ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' 
-        : 'bg-gradient-to-br from-white via-slate-50 to-white'
-    }`}>
+    <div className="h-screen flex transition-all duration-300">
       
       {/* Use the extracted ConversationSidebar component */}
       <ConversationSidebar
@@ -450,7 +520,7 @@ export function ClaudeMaxInterface() {
 
         {/* Input */}
         <ChatInput
-          ref={textareaRef}
+          textareaRef={textareaRef}
           prompt={prompt}
           loading={loading}
           messages={messages}

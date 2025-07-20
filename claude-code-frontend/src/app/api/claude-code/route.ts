@@ -33,11 +33,14 @@ export async function POST(request: NextRequest) {
       messages,
       messageCount: messages.length
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Claude Code API error:', error);
     
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     // Handle authentication errors specifically
-    if (error.message?.includes('authentication') || error.message?.includes('login')) {
+    if (errorMessage.includes('authentication') || errorMessage.includes('login')) {
       return NextResponse.json(
         { 
           error: 'Authentication required. Please run "claude login" in your terminal first.',
@@ -49,8 +52,8 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(
       { 
-        error: error.message || 'Failed to process request',
-        details: error.stack
+        error: errorMessage || 'Failed to process request',
+        details: errorStack
       },
       { status: 500 }
     );

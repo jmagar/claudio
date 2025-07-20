@@ -4,6 +4,7 @@ export interface ConversationMessage {
   content: string;
   timestamp: Date;
   streaming?: boolean;
+  finalized?: boolean;
   tokens?: {
     input: number;
     output: number;
@@ -19,7 +20,7 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
   totalTokens: number;
-  mcpServers?: Record<string, any>;
+  mcpServers?: Record<string, McpServer>;
 }
 
 export interface McpServer {
