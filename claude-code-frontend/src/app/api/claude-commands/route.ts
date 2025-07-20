@@ -214,6 +214,6 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('Error loading custom commands:', error);
-    return NextResponse.json({}, { status: 200 }); // Return empty object on error
+    return NextResponse.json({}, { status: 500 });
   }
 }
